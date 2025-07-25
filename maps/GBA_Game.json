@@ -1,0 +1,237 @@
+{
+  "game_info": {
+    "title": "GBA_Game",
+    "created": "2025-07-22T20:56:24.773756",
+    "last_played": "2025-07-22T21:03:54.563521",
+    "total_playtime": 0,
+    "version": "1.0"
+  },
+  "world_map": {
+    "grid_size": [
+      64,
+      64
+    ],
+    "visited_tiles": [],
+    "obstacles": [],
+    "landmarks": {
+      "pokemon_centers": [],
+      "shops": [],
+      "gyms": [],
+      "npcs": [],
+      "items": [],
+      "doors": [],
+      "warp_points": []
+    }
+  },
+  "areas": {
+    "3c03ec": {
+      "name": "Unknown_Area_1",
+      "first_visited": "2025-07-22T20:56:24.776727",
+      "game_state": "Battle",
+      "visit_count": 3,
+      "landmarks_detected": [],
+      "screenshot_hash": "3c03ec"
+    },
+    "ae9065": {
+      "name": "Unknown_Area_2",
+      "first_visited": "2025-07-22T20:56:26.112582",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "ae9065"
+    },
+    "794976": {
+      "name": "Unknown_Area_3",
+      "first_visited": "2025-07-22T20:56:27.448852",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "794976"
+    },
+    "ae2faa": {
+      "name": "Unknown_Area_4",
+      "first_visited": "2025-07-22T20:56:31.437858",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "ae2faa"
+    },
+    "91670f": {
+      "name": "Unknown_Area_5",
+      "first_visited": "2025-07-22T20:56:38.105370",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "91670f"
+    },
+    "136f0f": {
+      "name": "Unknown_Area_6",
+      "first_visited": "2025-07-22T20:56:42.122395",
+      "game_state": "Battle",
+      "visit_count": 2,
+      "landmarks_detected": [],
+      "screenshot_hash": "136f0f"
+    },
+    "514730": {
+      "name": "Unknown_Area_7",
+      "first_visited": "2025-07-22T20:56:51.521134",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "514730"
+    },
+    "4f4e70": {
+      "name": "Unknown_Area_8",
+      "first_visited": "2025-07-22T20:56:52.883388",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "4f4e70"
+    },
+    "2bd6fe": {
+      "name": "Unknown_Area_9",
+      "first_visited": "2025-07-22T20:56:59.491642",
+      "game_state": "Battle",
+      "visit_count": 3,
+      "landmarks_detected": [],
+      "screenshot_hash": "2bd6fe"
+    },
+    "d052d7": {
+      "name": "Unknown_Area_10",
+      "first_visited": "2025-07-22T20:57:12.893352",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "d052d7"
+    },
+    "90b947": {
+      "name": "Unknown_Area_11",
+      "first_visited": "2025-07-22T20:57:33.025879",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "90b947"
+    },
+    "1732c6": {
+      "name": "Unknown_Area_12",
+      "first_visited": "2025-07-22T20:58:10.544443",
+      "game_state": "Battle",
+      "visit_count": 2,
+      "landmarks_detected": [],
+      "screenshot_hash": "1732c6"
+    },
+    "39733a": {
+      "name": "Unknown_Area_13",
+      "first_visited": "2025-07-22T20:58:14.670963",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "39733a"
+    },
+    "c5b71a": {
+      "name": "Unknown_Area_14",
+      "first_visited": "2025-07-22T20:58:18.807296",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "c5b71a"
+    },
+    "14ff09": {
+      "name": "Unknown_Area_15",
+      "first_visited": "2025-07-22T20:58:23.071791",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "14ff09"
+    },
+    "d2c8bd": {
+      "name": "Unknown_Area_16",
+      "first_visited": "2025-07-22T21:02:57.606578",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "d2c8bd"
+    },
+    "2b698d": {
+      "name": "Unknown_Area_17",
+      "first_visited": "2025-07-22T21:03:00.232868",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "2b698d"
+    },
+    "16c1d7": {
+      "name": "Unknown_Area_18",
+      "first_visited": "2025-07-22T21:03:01.555049",
+      "game_state": "Battle",
+      "visit_count": 4,
+      "landmarks_detected": [],
+      "screenshot_hash": "16c1d7"
+    },
+    "d87ad4": {
+      "name": "Unknown_Area_19",
+      "first_visited": "2025-07-22T21:03:02.879425",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "d87ad4"
+    },
+    "015efc": {
+      "name": "Unknown_Area_20",
+      "first_visited": "2025-07-22T21:03:47.929040",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "015efc"
+    },
+    "c28030": {
+      "name": "Unknown_Area_21",
+      "first_visited": "2025-07-22T21:03:53.243274",
+      "game_state": "Battle",
+      "visit_count": 1,
+      "landmarks_detected": [],
+      "screenshot_hash": "c28030"
+    }
+  },
+  "encounters": {
+    "wild_pokemon": [],
+    "trainer_battles": [],
+    "npc_interactions": []
+  },
+  "progress": {
+    "badges": 0,
+    "pokemon_seen": 0,
+    "pokemon_caught": 0,
+    "areas_discovered": [
+      "Unknown_Area_1",
+      "Unknown_Area_2",
+      "Unknown_Area_3",
+      "Unknown_Area_4",
+      "Unknown_Area_5",
+      "Unknown_Area_6",
+      "Unknown_Area_7",
+      "Unknown_Area_8",
+      "Unknown_Area_9",
+      "Unknown_Area_10",
+      "Unknown_Area_11",
+      "Unknown_Area_12",
+      "Unknown_Area_13",
+      "Unknown_Area_14",
+      "Unknown_Area_15",
+      "Unknown_Area_16",
+      "Unknown_Area_17",
+      "Unknown_Area_18",
+      "Unknown_Area_19",
+      "Unknown_Area_20",
+      "Unknown_Area_21"
+    ],
+    "key_events": []
+  },
+  "statistics": {
+    "steps_taken": 0,
+    "battles_won": 0,
+    "battles_lost": 0,
+    "items_found": 0,
+    "money_earned": 0
+  }
+}

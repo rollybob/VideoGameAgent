@@ -1,0 +1,3409 @@
+import threading
+import time
+import os
+import random
+import tkinter as tk
+from tkinter import ttk
+from datetime import datetime
+from pynput import keyboard
+import queue
+import json
+from typing import Dict, Any
+import cv2
+import numpy as np
+
+from .perception.screen_reader import (
+    find_emulator_window,
+    capture_window,
+    capture_emulator_game_area,
+    capture_emulator_without_overlay,
+    detect_game_state,
+    analyze_screen_regions,
+    extract_text_from_screen,
+)
+from .controllers import ControllerManager
+from .safe_input import safe_emulator_key_press, get_emulator_input_status
+from .pathfinding import GamePathfinder
+from .memory_system import GameMemory
+from .goal_system import GoalSystem, GoalPriority
+from .parallel_decision_manager import ParallelDecisionManager
+# Lazy loading - don't import ML modules until needed
+try:
+    from vga_integration import VGAUniversalAIBridge, create_vga_ai_bridge
+    UNIVERSAL_AI_AVAILABLE = True
+except ImportError:
+    UNIVERSAL_AI_AVAILABLE = False
+    print("Universal AI components not available")
+GameStateMLDetector = None
+ML_BACKEND = None
+
+def get_ml_detector_class():
+    """Lazy load ML detector to improve startup time"""
+    global GameStateMLDetector, ML_BACKEND
+    if GameStateMLDetector is not None:
+        return GameStateMLDetector
+    
+    try:
+        # Try importing from current directory first (when run from agent/)
+        from ml_state_detector import GameStateMLDetector
+        ML_BACKEND = "tensorflow"
+    except ImportError:
+        try:
+            # Try importing from agent subdirectory (when run from root)
+            from agent.ml_state_detector import GameStateMLDetector
+            ML_BACKEND = "tensorflow"
+        except ImportError:
+            print("TensorFlow not available, using scikit-learn backend")
+            try:
+                from sklearn_state_detector import GameStateSklearnDetector as GameStateMLDetector
+                ML_BACKEND = "sklearn"
+            except ImportError:
+                from agent.sklearn_state_detector import GameStateSklearnDetector as GameStateMLDetector
+                ML_BACKEND = "sklearn"
+    
+    return GameStateMLDetector
+import time
+
+class GameAgent:
+    def __init__(self):
+        self.last_move = time.time()
+        self.last_state = None
+        self.state_history = []
+        self.stuck_counter = 0
+        self.movement_history = []
+        self.max_history = 10
+        self.exploration_strategy = "smart_pathfinding"  # Changed from "random"
+        self.last_position_hash = None
+        self.paused = False
+        self.current_frame = None
+        self.current_analysis = {}
+        self.decision_log = []
+        
+        # State transition detection
+        self.state_transition_history = []
+        self.last_state_change_time = time.time()
+        self.state_stability_threshold = 3  # Require 3 consistent detections before accepting state change
+        
+        # Transition effect detection
+        self.last_frame_for_transition = None
+        self.transition_effect_detected = False
+        self.transition_cooldown = 0.0
+        
+        # Pathfinding system
+        self.pathfinder = GamePathfinder()
+        self.current_goal = None
+        self.current_path = []
+        self.path_step = 0
+        self.goal_types = ["unexplored", "center", "edge"]
+        self.current_goal_type = "unexplored"
+        
+        # Memory system
+        self.memory = GameMemory()
+        self.memory_initialized = False
+        
+        # Goal system
+        self.goal_system = GoalSystem()
+        self.current_goal = None
+        self.last_goal_update = time.time()
+        
+        # ML State Detection system - use paths that work from both directories
+        import os
+        if os.path.exists("models"):
+            # Running from agent/ directory
+            model_path = "models"
+            data_path = "training_data"
+        else:
+            # Running from root directory
+            model_path = "agent/models"
+            data_path = "agent/training_data"
+        
+        # Lazy initialize ML detector (only loads TensorFlow when needed)
+        DetectorClass = get_ml_detector_class()
+        self.ml_detector = DetectorClass(
+            model_path=model_path, 
+            data_path=data_path
+        )
+        self.use_ml_detection = False  # Start with traditional detection
+        self.ml_model_loaded = False
+        
+        # Neural agent system
+        self.neural_agent = None
+        self.use_neural_agent = False
+        
+        # Universal AI system
+        self.universal_ai_bridge = None
+        self.use_universal_ai = False
+        
+        # Fast movement system for continuous movement
+        try:
+            from fast_movement_agent import FastMovementAgent
+            self.fast_movement_agent = FastMovementAgent()
+            self.fast_movement_agent._in_game_use = True  # Enable cooldown for actual gameplay
+            self.use_fast_movement = True
+        except ImportError:
+            print("Fast movement agent not available")
+            self.fast_movement_agent = None
+            self.use_fast_movement = False
+        
+        # Safe input system
+        self.use_safe_input = True  # Enable safe input by default
+        self.use_clean_screenshots = True  # Use overlay-free screenshots for ML
+        
+        # Frame storage
+        self.current_ml_frame = None  # Clean frame for ML operations
+        
+        # Action cooldowns to prevent button mashing
+        self.last_action_time = time.time()
+        self.action_cooldown = 0.1  # 100ms between actions (much faster)
+        self.last_dialogue_action = time.time()
+        self.dialogue_cooldown = 0.3  # 300ms between dialogue actions
+        
+    def is_stuck(self, current_frame):
+        """Detect if agent is stuck by comparing recent frames and input activity"""
+        if current_frame is None:
+            return False
+            
+        current_hash = hash(current_frame.tobytes())
+        current_time = time.time()
+        
+        # Check for lack of inputs - if no input for 3+ seconds, increase stuck counter
+        time_since_last_input = current_time - self.last_action_time
+        if time_since_last_input > 3.0:  # No input for 3 seconds
+            self.stuck_counter += 2  # Increase counter for input inactivity
+        
+        if self.last_position_hash == current_hash:
+            self.stuck_counter += 1
+        else:
+            # Only reset stuck counter if we've actually moved significantly
+            # Don't reset for minor frame changes - but cap the slow decrease
+            if self.stuck_counter > 0:
+                self.stuck_counter = max(0, self.stuck_counter - 2)  # Slightly faster decrease to prevent runaway
+            
+        self.last_position_hash = current_hash
+        
+        # Also check movement history for repetitive patterns
+        if len(self.movement_history) >= 4:
+            last_moves = self.movement_history[-4:]
+            if len(set(last_moves)) == 1:  # Same move repeated 4 times
+                self.stuck_counter += 10  # Increase stuck counter much faster
+            elif len(self.movement_history) >= 6:
+                # Check for alternating patterns (up, down, up, down)
+                last_6 = self.movement_history[-6:]
+                if (last_6[0] == last_6[2] == last_6[4] and 
+                    last_6[1] == last_6[3] == last_6[5] and 
+                    last_6[0] != last_6[1]):
+                    self.stuck_counter += 15  # Even faster for alternating patterns
+        
+        return self.stuck_counter > 8  # Detection threshold
+        
+    def choose_movement(self, state, screen_analysis):
+        """Smart movement selection using pathfinding"""
+        if state in ["Water/Flying", "Overworld", "Indoor/Cave"]:
+            # Update pathfinder with current frame
+            if self.current_frame is not None:
+                self.pathfinder.update_obstacle_map(self.current_frame)
+                
+                # Get current position
+                current_pos = self.pathfinder.get_player_position(self.current_frame)
+                if current_pos:
+                    # Mark current position as visited
+                    self.pathfinder.mark_visited(current_pos)
+                    
+                    # Check if we need a new goal or path
+                    if not self.current_path or self.path_step >= len(self.current_path):
+                        self.find_new_goal(current_pos)
+                    
+                    # Follow current path
+                    if self.current_path and self.path_step < len(self.current_path):
+                        direction = self.current_path[self.path_step]
+                        self.path_step += 1
+                        return direction
+                    
+                    # Fallback to smart exploration if no path
+                    smart_direction = self.pathfinder.get_smart_exploration_direction(current_pos)
+                    if smart_direction:
+                        return smart_direction
+            
+            # Enhanced stuck prevention - detect patterns faster
+            if len(self.movement_history) >= 2:
+                last_moves = self.movement_history[-2:]
+                if len(set(last_moves)) == 1:
+                    # If repeating same move, try perpendicular directions immediately
+                    stuck_move = last_moves[0]
+                    perpendicular_moves = {
+                        "up": ["left", "right"], "down": ["left", "right"],
+                        "left": ["up", "down"], "right": ["up", "down"]
+                    }
+                    return random.choice(perpendicular_moves.get(stuck_move, ["left", "right"]))
+            
+            # Check for alternating patterns (up/down/up/down)
+            if len(self.movement_history) >= 4:
+                last_4 = self.movement_history[-4:]
+                if (last_4[0] == last_4[2] and last_4[1] == last_4[3] and 
+                    last_4[0] != last_4[1]):
+                    # Break alternating pattern with a different direction
+                    used_directions = set(last_4)
+                    all_directions = {"up", "down", "left", "right"}
+                    unused = list(all_directions - used_directions)
+                    if unused:
+                        return random.choice(unused)
+            
+            # Intelligent direction preference based on exploration
+            directions = ["up", "down", "left", "right"]
+            if self.movement_history:
+                # Strongly prefer directions we haven't used recently
+                recent_moves = self.movement_history[-8:]
+                direction_counts = {d: recent_moves.count(d) for d in directions}
+                min_count = min(direction_counts.values())
+                best_directions = [d for d, count in direction_counts.items() if count == min_count]
+                
+                if best_directions:
+                    return random.choice(best_directions)
+            
+            return random.choice(directions)
+        return "up"
+        
+    def find_new_goal(self, current_pos):
+        """Find a new goal and calculate path to it"""
+        # Try to find a goal of the current type
+        goal = self.pathfinder.find_nearest_goal(current_pos, self.current_goal_type)
+        
+        if goal is None:
+            # Cycle to next goal type if current type has no goals
+            current_index = self.goal_types.index(self.current_goal_type)
+            self.current_goal_type = self.goal_types[(current_index + 1) % len(self.goal_types)]
+            goal = self.pathfinder.find_nearest_goal(current_pos, self.current_goal_type)
+        
+        if goal:
+            # Calculate path to the goal
+            path = self.pathfinder.find_path(current_pos, goal)
+            if path:
+                self.current_goal = goal
+                self.current_path = path
+                self.path_step = 0
+                return True
+        
+        # No goal found, clear current path
+        self.current_goal = None
+        self.current_path = []
+        self.path_step = 0
+        return False
+    
+    def wall_follow_movement(self):
+        """Simple wall-following algorithm for exploration (fallback)"""
+        wall_follow_sequence = ["right", "down", "left", "up"]
+        if not hasattr(self, 'wall_follow_index'):
+            self.wall_follow_index = 0
+        
+        direction = wall_follow_sequence[self.wall_follow_index]
+        self.wall_follow_index = (self.wall_follow_index + 1) % len(wall_follow_sequence)
+        return direction
+        
+    def handle_dialogue_menu(self, screen_analysis, press_func):
+        """Enhanced dialogue/menu handling for Pokemon-like games"""
+        # Light cooldown check to prevent button mashing
+        if time.time() - self.last_dialogue_action < self.dialogue_cooldown:
+            return "waiting_cooldown"
+            
+        if not hasattr(self, 'menu_counter'):
+            self.menu_counter = 0
+            self.last_menu_action = None
+            
+        if self.last_menu_action == "B" and self.menu_counter < 3:
+            self.menu_counter += 1
+            return "waiting"
+            
+        # More aggressive dialogue advancement for story goals
+        if screen_analysis.get('has_text_box'):
+            press_func("A", "Dialogue")
+            self.last_menu_action = "A"
+            self.menu_counter = 0
+            self.last_dialogue_action = time.time()
+            return "dialogue_advance"
+        elif screen_analysis.get('has_menu'):
+            if self.menu_counter % 4 == 0:
+                direction = random.choice(["up", "down"])
+                press_func(direction, "Menu Nav")
+                self.last_menu_action = direction
+                self.menu_counter += 1
+                self.last_dialogue_action = time.time()
+                return "menu_navigation"
+            else:
+                press_func("A", "Menu Select")
+                self.last_menu_action = "A"
+                self.menu_counter += 1
+                self.last_dialogue_action = time.time()
+                return "menu_select"
+        else:
+            # Default dialogue advancement - always try A button
+            print("No text box or menu detected, pressing A to advance dialogue")
+            press_func("A", "Dialogue Advance")
+            self.last_menu_action = "A"
+            self.menu_counter = 0
+            self.last_dialogue_action = time.time()
+            return "dialogue_advance"
+            
+    def log_decision(self, state, action, reasoning):
+        """Log agent decisions for debugging"""
+        self.decision_log.append({
+            'timestamp': datetime.now().strftime("%H:%M:%S"),
+            'state': state,
+            'action': action,
+            'reasoning': reasoning
+        })
+        if len(self.decision_log) > 20:
+            self.decision_log.pop(0)
+            
+    def handle_wild_battle(self, screen_analysis, ai_press_func):
+        """Handle wild Pokemon battles - focus on catching or running"""
+        if not hasattr(self, 'wild_battle_counter'):
+            self.wild_battle_counter = 0
+            
+        self.wild_battle_counter += 1
+        
+        # Simple strategy: attack a few times, then try to catch
+        if self.wild_battle_counter < 3:
+            ai_press_func("A", "Wild Attack")
+            return "attack"
+        elif self.wild_battle_counter < 5:
+            # Try to weaken with different moves
+            ai_press_func("down", "Move Select")
+            return "move_select"
+        else:
+            # Reset counter after attempting capture/run
+            self.wild_battle_counter = 0
+            ai_press_func("B", "Run/Items")
+            return "run_attempt"
+    
+    def handle_trainer_battle(self, screen_analysis, ai_press_func):
+        """Handle trainer battles - focus on winning"""
+        if not hasattr(self, 'trainer_battle_strategy'):
+            self.trainer_battle_strategy = "attack"
+            
+        # More aggressive strategy for trainer battles
+        if screen_analysis.get('health_bar_visible'):
+            # Check if we need to switch Pokemon or use items
+            if hasattr(self, 'low_health_detected') and self.low_health_detected:
+                ai_press_func("down", "Switch/Items")
+                self.low_health_detected = False
+                return "switch_pokemon"
+        
+        # Default to attacking
+        ai_press_func("A", "Trainer Attack")
+        return "attack"
+    
+    def handle_pokemon_center(self, screen_analysis, ai_press_func):
+        """Handle Pokemon Center interactions - heal team"""
+        if not hasattr(self, 'pokecenter_state'):
+            self.pokecenter_state = "approach"
+            
+        if self.pokecenter_state == "approach":
+            # Move up to nurse
+            ai_press_func("up", "Approach Nurse")
+            self.pokecenter_state = "interact"
+            return "approach"
+        elif self.pokecenter_state == "interact":
+            # Talk to nurse
+            ai_press_func("A", "Talk to Nurse")
+            self.pokecenter_state = "healing"
+            return "talk"
+        else:
+            # Continue dialogue
+            ai_press_func("A", "Healing Dialogue")
+            return "healing"
+    
+    def handle_shop(self, screen_analysis, ai_press_func):
+        """Handle shop interactions - browse and potentially buy"""
+        if not hasattr(self, 'shop_counter'):
+            self.shop_counter = 0
+            
+        self.shop_counter += 1
+        
+        if self.shop_counter < 3:
+            # Browse items
+            ai_press_func("down", "Browse Items")
+            return "browse"
+        elif self.shop_counter < 5:
+            # Look at an item
+            ai_press_func("A", "Select Item")
+            return "select"
+        else:
+            # Exit shop
+            ai_press_func("B", "Exit Shop")
+            self.shop_counter = 0
+            return "exit"
+    
+    def handle_gym(self, screen_analysis, ai_press_func):
+        """Handle gym interactions - navigate and battle"""
+        if not hasattr(self, 'gym_state'):
+            self.gym_state = "explore"
+            
+        if self.gym_state == "explore":
+            # Navigate gym puzzles
+            directions = ["up", "down", "left", "right"]
+            direction = random.choice(directions)
+            ai_press_func(direction, "Gym Navigation")
+            return "navigate"
+        else:
+            # Default interaction
+            ai_press_func("A", "Gym Interact")
+            return "interact"
+    
+    def update_history(self, state, action):
+        """Update agent's memory of states and actions"""
+        self.state_history.append((state, action, time.time()))
+        if len(self.state_history) > self.max_history:
+            self.state_history.pop(0)
+            
+        if action in ["up", "down", "left", "right"]:
+            self.movement_history.append(action)
+            if len(self.movement_history) > self.max_history:
+                self.movement_history.pop(0)
+
+class UnifiedGameAgentGUI:
+    def __init__(self):
+        self.root = tk.Tk()
+        self.setup_window()
+        
+        # Initialize controller manager
+        self.controller_manager = ControllerManager()
+        
+        # Initialize agent
+        self.agent = GameAgent()
+        self.emulator_window = None
+        
+        # Initialize parallel decision manager
+        self.parallel_manager = ParallelDecisionManager()
+        
+        # Periodic save tracking
+        self.last_periodic_save = time.time()
+        self.periodic_save_interval = 15.0  # Save every 15 seconds when running
+        
+        # Button states and history
+        self.active_buttons = {}
+        self.input_history = []
+        self.max_history = 15
+        
+        # Key mappings
+        self.key_map = {
+            'Key.up': 'up',
+            'Key.down': 'down', 
+            'Key.left': 'left',
+            'Key.right': 'right',
+            'z': 'B',
+            'x': 'A',
+            'a': 'L',
+            's': 'R',
+            'Key.enter': 'start',
+            'Key.backspace': 'select'
+        }
+        
+        # Button colors
+        self.button_colors = {
+            'up': '#60A5FA', 'down': '#60A5FA', 'left': '#60A5FA', 'right': '#60A5FA',
+            'A': '#F87171', 'B': '#FBBF24', 'L': '#9CA3AF', 'R': '#9CA3AF',
+            'select': '#A78BFA', 'start': '#34D399'
+        }
+        
+        # Thread-safe queue for updates
+        self.update_queue = queue.Queue()
+        
+        # Error rate limiting and circuit breaker
+        self.last_error_time = 0
+        self.error_count = 0
+        self.max_errors_per_second = 5
+        self.total_error_count = 0
+        self.max_total_errors = 50  # Circuit breaker threshold
+        self.updates_disabled = False
+        
+        self.setup_gui()
+        self.start_keyboard_listener()
+        
+        # Start update loop
+        self.root.after(10, self.process_updates)
+        
+    def setup_window(self):
+        self.root.title("Video Game Agent (VGA)")
+        self.root.geometry("600x800")
+        self.root.configure(bg='#1F2937')
+        self.root.attributes('-topmost', True)
+        self.root.attributes('-alpha', 0.95)
+        
+        # Handle window closing
+        self.root.protocol("WM_DELETE_WINDOW", self.on_closing)
+        
+    def setup_gui(self):
+        # Main frame
+        main_frame = tk.Frame(self.root, bg='#1F2937')
+        main_frame.pack(fill='both', expand=True, padx=10, pady=10)
+        
+        # Title
+        title_label = tk.Label(main_frame, text="Video Game Agent (VGA)", 
+                              bg='#1F2937', fg='white', font=('Arial', 16, 'bold'))
+        title_label.pack(pady=(0, 10))
+        
+        # Controller selection
+        controller_frame = tk.Frame(main_frame, bg='#1F2937')
+        controller_frame.pack(fill='x', pady=(0, 10))
+        
+        tk.Label(controller_frame, text="Controller:", bg='#1F2937', fg='white', 
+                font=('Arial', 10)).pack(side='left', padx=(0, 5))
+        
+        self.controller_var = tk.StringVar()
+        self.controller_dropdown = ttk.Combobox(controller_frame, textvariable=self.controller_var,
+                                              values=self.controller_manager.get_available_controllers(),
+                                              state='readonly', width=20)
+        self.controller_dropdown.pack(side='left', padx=(0, 10))
+        self.controller_dropdown.set(self.controller_manager.get_current_controller_name())
+        self.controller_dropdown.bind('<<ComboboxSelected>>', self.on_controller_change)
+        
+        # Controller info display
+        self.controller_info_label = tk.Label(controller_frame, text="", bg='#1F2937', fg='#9CA3AF', 
+                                            font=('Arial', 9))
+        self.controller_info_label.pack(side='left', padx=(10, 0))
+        self.update_controller_info()
+        
+        # Control buttons
+        control_frame = tk.Frame(main_frame, bg='#1F2937')
+        control_frame.pack(fill='x', pady=(0, 10))
+        
+        self.start_button = tk.Button(control_frame, text="Start Agent", 
+                                     command=self.start_agent, bg='#10B981', fg='white')
+        self.start_button.pack(side='left', padx=(0, 5))
+        
+        self.pause_button = tk.Button(control_frame, text="Pause/Resume (Q)", 
+                                     command=self.toggle_pause, bg='#F59E0B', fg='white')
+        self.pause_button.pack(side='left', padx=(0, 5))
+        
+        self.shutdown_button = tk.Button(control_frame, text="Shutdown Agent", 
+                                       command=self.shutdown_agent, bg='#EF4444', fg='white')
+        self.shutdown_button.pack(side='left')
+        
+        # Status indicator
+        self.status_label = tk.Label(main_frame, text="Status: Stopped", 
+                                    bg='#1F2937', fg='#EF4444', font=('Arial', 12))
+        self.status_label.pack(pady=(0, 10))
+        
+        # Create tabbed interface
+        self.notebook = ttk.Notebook(main_frame)
+        self.notebook.pack(fill='both', expand=True)
+        
+        # Tab 1: Controller and Input History
+        self.controller_tab = tk.Frame(self.notebook, bg='#374151')
+        self.notebook.add(self.controller_tab, text="Controller")
+        
+        # Tab 2: Agent Brain
+        self.brain_tab = tk.Frame(self.notebook, bg='#374151')
+        self.notebook.add(self.brain_tab, text="Agent Brain")
+        
+        # Tab 3: Memory & Maps
+        self.memory_tab = tk.Frame(self.notebook, bg='#374151')
+        self.notebook.add(self.memory_tab, text="Memory & Maps")
+        
+        # Tab 4: Goals & Strategy
+        self.goals_tab = tk.Frame(self.notebook, bg='#374151')
+        self.notebook.add(self.goals_tab, text="Goals & Strategy")
+        
+        self.setup_controller_tab()
+        self.setup_brain_tab()
+        self.setup_memory_tab()
+        self.setup_goals_tab()
+        
+    def setup_controller_tab(self):
+        # Controller display
+        controller_frame = tk.Frame(self.controller_tab, bg='#374151', relief='raised', bd=2)
+        controller_frame.pack(fill='x', pady=(10, 10), padx=10)
+        
+        self.create_controller_layout(controller_frame)
+        
+        # Input history
+        history_frame = tk.LabelFrame(self.controller_tab, text="Input History", 
+                                     bg='#374151', fg='white', font=('Arial', 10, 'bold'))
+        history_frame.pack(fill='both', expand=True, padx=10, pady=(0, 10))
+        
+        self.history_text = tk.Text(history_frame, height=12, bg='#111827', fg='white',
+                                   font=('Courier', 9), state='disabled')
+        
+        scrollbar = ttk.Scrollbar(history_frame, orient='vertical', command=self.history_text.yview)
+        self.history_text.configure(yscrollcommand=scrollbar.set)
+        
+        self.history_text.pack(side='left', fill='both', expand=True)
+        scrollbar.pack(side='right', fill='y')
+        
+    def setup_brain_tab(self):
+        # === AI CONTROL CENTER ===
+        ai_control_frame = tk.LabelFrame(self.brain_tab, text="AI Control Center", 
+                                       bg='#374151', fg='white', font=('Arial', 12, 'bold'))
+        ai_control_frame.pack(fill='x', padx=10, pady=(10, 5))
+        
+        # Agent type selection
+        agent_frame = tk.Frame(ai_control_frame, bg='#374151')
+        agent_frame.pack(fill='x', padx=10, pady=(10, 5))
+        
+        self.agent_var = tk.StringVar(value="traditional")  # Start with traditional
+        
+        tk.Radiobutton(agent_frame, text="Traditional Agent", variable=self.agent_var,
+                      value="traditional", bg='#374151', fg='white', selectcolor='#6B7280',
+                      command=self.on_agent_type_change).pack(side='left', padx=10)
+        
+        tk.Radiobutton(agent_frame, text="Universal AI", variable=self.agent_var,
+                      value="universal", bg='#374151', fg='white', selectcolor='#6B7280',
+                      command=self.on_agent_type_change).pack(side='left', padx=10)
+        
+        tk.Radiobutton(agent_frame, text="Neural Agent", variable=self.agent_var,
+                      value="neural", bg='#374151', fg='white', selectcolor='#6B7280',
+                      command=self.on_agent_type_change).pack(side='left', padx=10)
+        
+        # AI agent controls
+        ai_controls_frame = tk.Frame(ai_control_frame, bg='#374151')
+        ai_controls_frame.pack(fill='x', padx=10, pady=(0, 10))
+        
+        # Universal AI controls
+        self.init_universal_ai_button = tk.Button(ai_controls_frame, text="Init Universal", 
+                                                command=self.initialize_universal_ai, bg='#10B981', fg='white', width=12)
+        self.init_universal_ai_button.pack(side='left', padx=5)
+        
+        self.universal_ai_mode_button = tk.Button(ai_controls_frame, text="Universal Off", 
+                                                command=self.toggle_universal_ai_mode, bg='#374151', fg='white', width=12)
+        self.universal_ai_mode_button.pack(side='left', padx=5)
+        
+        # Neural agent controls
+        self.init_neural_button = tk.Button(ai_controls_frame, text="Init Neural", 
+                                          command=self.initialize_neural_agent, bg='#7C3AED', fg='white', width=12)
+        self.init_neural_button.pack(side='left', padx=5)
+        
+        self.neural_mode_button = tk.Button(ai_controls_frame, text="Neural Off", 
+                                          command=self.toggle_neural_mode, bg='#374151', fg='white', width=12)
+        self.neural_mode_button.pack(side='left', padx=5)
+        
+        # AI Status display
+        ai_status_frame = tk.Frame(ai_control_frame, bg='#374151')
+        ai_status_frame.pack(fill='x', padx=10, pady=(0, 10))
+        
+        self.universal_ai_status_label = tk.Label(ai_status_frame, text="Universal AI: Not initialized", 
+                                                bg='#374151', fg='#9CA3AF', font=('Arial', 9))
+        self.universal_ai_status_label.pack(side='left', padx=10)
+        
+        self.neural_status_label = tk.Label(ai_status_frame, text="Neural Agent: Not initialized", 
+                                          bg='#374151', fg='#9CA3AF', font=('Arial', 9))
+        self.neural_status_label.pack(side='right', padx=10)
+        
+        # === STATE DETECTION ===
+        detection_frame = tk.LabelFrame(self.brain_tab, text="State Detection & Training", 
+                                      bg='#374151', fg='white', font=('Arial', 12, 'bold'))
+        detection_frame.pack(fill='x', padx=10, pady=5)
+        
+        # Detection method selection
+        detection_method_frame = tk.Frame(detection_frame, bg='#374151')
+        detection_method_frame.pack(fill='x', padx=10, pady=10)
+        
+        self.detection_var = tk.StringVar(value="traditional")
+        
+        tk.Radiobutton(detection_method_frame, text="Traditional (Color-based)", variable=self.detection_var, 
+                      value="traditional", bg='#374151', fg='white', selectcolor='#6B7280',
+                      command=self.on_detection_method_change).pack(side='left', padx=10)
+        
+        tk.Radiobutton(detection_method_frame, text="ML Detection (Smart)", variable=self.detection_var,
+                      value="ml", bg='#374151', fg='white', selectcolor='#6B7280',
+                      command=self.on_detection_method_change).pack(side='left', padx=10)
+        
+        # ML training controls
+        ml_controls_frame = tk.Frame(detection_frame, bg='#374151')
+        ml_controls_frame.pack(fill='x', padx=10, pady=(0, 10))
+        
+        self.train_model_button = tk.Button(ml_controls_frame, text="Train Model", 
+                                          command=self.train_ml_model, bg='#F59E0B', fg='white', width=12)
+        self.train_model_button.pack(side='left', padx=5)
+        
+        self.load_model_button = tk.Button(ml_controls_frame, text="Load Model", 
+                                         command=self.load_ml_model, bg='#059669', fg='white', width=12)
+        self.load_model_button.pack(side='left', padx=5)
+        
+        # Quick data collection (no dropdown needed)
+        self.collect_data_button = tk.Button(ml_controls_frame, text="Collect Screenshot", 
+                                           command=self.collect_current_screenshot, bg='#8B5CF6', fg='white', width=15)
+        self.collect_data_button.pack(side='left', padx=5)
+        
+        self.review_button = tk.Button(ml_controls_frame, text="Review: 0", 
+                                     command=self.review_pending_samples, bg='#DC2626', fg='white', width=10)
+        self.review_button.pack(side='left', padx=5)
+        
+        self.ml_status_label = tk.Label(ml_controls_frame, text="Status: Traditional detection active", 
+                                       bg='#374151', fg='#9CA3AF', font=('Arial', 9))
+        self.ml_status_label.pack(side='right', padx=10)
+        
+        # === GAME STATE DISPLAY ===
+        state_frame = tk.LabelFrame(self.brain_tab, text="Current Game State", 
+                                   bg='#374151', fg='white', font=('Arial', 10, 'bold'))
+        state_frame.pack(fill='x', padx=10, pady=5)
+        
+        # Current state label
+        self.current_state_label = tk.Label(state_frame, text="State: Initializing...", 
+                                          bg='#374151', fg='#9CA3AF', font=('Arial', 10, 'bold'))
+        self.current_state_label.pack(pady=(5, 2))
+        
+        # ML prediction label
+        self.ml_prediction_label = tk.Label(state_frame, text="ML: Not active", 
+                                          bg='#374151', fg='#6B7280', font=('Arial', 9))
+        self.ml_prediction_label.pack(pady=(0, 2))
+        
+        # Parallel AI performance label
+        self.parallel_performance_label = tk.Label(state_frame, text="Parallel AI: Initializing...", 
+                                                 bg='#374151', fg='#8B5CF6', font=('Arial', 9))
+        self.parallel_performance_label.pack(pady=(0, 2))
+        
+        self.state_text = tk.Text(state_frame, height=3, bg='#111827', fg='#10B981',
+                                 font=('Courier', 9), state='disabled')
+        self.state_text.pack(fill='x', padx=5, pady=5)
+        
+        # Screen analysis
+        analysis_frame = tk.LabelFrame(self.brain_tab, text="Screen Analysis", 
+                                      bg='#374151', fg='white', font=('Arial', 10, 'bold'))
+        analysis_frame.pack(fill='x', padx=10, pady=5)
+        
+        self.analysis_text = tk.Text(analysis_frame, height=4, bg='#111827', fg='#60A5FA',
+                                    font=('Courier', 9), state='disabled')
+        self.analysis_text.pack(fill='x', padx=5, pady=5)
+        
+        # Decision log
+        decisions_frame = tk.LabelFrame(self.brain_tab, text="Decision Log", 
+                                       bg='#374151', fg='white', font=('Arial', 10, 'bold'))
+        decisions_frame.pack(fill='both', expand=True, padx=10, pady=(5, 10))
+        
+        self.decisions_text = tk.Text(decisions_frame, bg='#111827', fg='#FBBF24',
+                                     font=('Courier', 9), state='disabled')
+        
+        decisions_scrollbar = ttk.Scrollbar(decisions_frame, orient='vertical', 
+                                          command=self.decisions_text.yview)
+        self.decisions_text.configure(yscrollcommand=decisions_scrollbar.set)
+        
+        self.decisions_text.pack(side='left', fill='both', expand=True)
+        decisions_scrollbar.pack(side='right', fill='y')
+        
+    def setup_memory_tab(self):
+        # Memory statistics
+        memory_stats_frame = tk.LabelFrame(self.memory_tab, text="Memory Statistics", 
+                                         bg='#374151', fg='white', font=('Arial', 10, 'bold'))
+        memory_stats_frame.pack(fill='x', padx=10, pady=(10, 5))
+        
+        self.memory_stats_text = tk.Text(memory_stats_frame, height=6, bg='#111827', fg='#10B981',
+                                        font=('Courier', 9), state='disabled')
+        self.memory_stats_text.pack(fill='x', padx=5, pady=5)
+        
+        # Discovered areas
+        areas_frame = tk.LabelFrame(self.memory_tab, text="Discovered Areas", 
+                                   bg='#374151', fg='white', font=('Arial', 10, 'bold'))
+        areas_frame.pack(fill='x', padx=10, pady=5)
+        
+        self.areas_text = tk.Text(areas_frame, height=8, bg='#111827', fg='#60A5FA',
+                                 font=('Courier', 9), state='disabled')
+        
+        areas_scrollbar = ttk.Scrollbar(areas_frame, orient='vertical', command=self.areas_text.yview)
+        self.areas_text.configure(yscrollcommand=areas_scrollbar.set)
+        
+        self.areas_text.pack(side='left', fill='both', expand=True)
+        areas_scrollbar.pack(side='right', fill='y')
+        
+        # Landmarks discovered
+        landmarks_frame = tk.LabelFrame(self.memory_tab, text="Landmarks Found", 
+                                       bg='#374151', fg='white', font=('Arial', 10, 'bold'))
+        landmarks_frame.pack(fill='both', expand=True, padx=10, pady=(5, 10))
+        
+        self.landmarks_text = tk.Text(landmarks_frame, bg='#111827', fg='#FBBF24',
+                                     font=('Courier', 9), state='disabled')
+        
+        landmarks_scrollbar = ttk.Scrollbar(landmarks_frame, orient='vertical', 
+                                          command=self.landmarks_text.yview)
+        self.landmarks_text.configure(yscrollcommand=landmarks_scrollbar.set)
+        
+        self.landmarks_text.pack(side='left', fill='both', expand=True)
+        landmarks_scrollbar.pack(side='right', fill='y')
+        
+    def setup_goals_tab(self):
+        """Simplified goals tab focused on agent control and goals"""
+        
+        # === AGENT CONTROL ===
+        control_frame = tk.LabelFrame(self.goals_tab, text="Agent Control", 
+                                    bg='#374151', fg='white', font=('Arial', 12, 'bold'))
+        control_frame.pack(fill='x', padx=10, pady=(10, 5))
+        
+        # Status display
+        status_row = tk.Frame(control_frame, bg='#374151')
+        status_row.pack(fill='x', padx=10, pady=(10, 5))
+        
+        self.status_label = tk.Label(status_row, text="Status: Stopped", 
+                                   bg='#374151', fg='#EF4444', font=('Arial', 12, 'bold'))
+        self.status_label.pack(side='left')
+        
+        self.agent_mode_label = tk.Label(status_row, text="Mode: Traditional Agent", 
+                                       bg='#374151', fg='#9CA3AF', font=('Arial', 10))
+        self.agent_mode_label.pack(side='right')
+        
+        # Control buttons row
+        control_row = tk.Frame(control_frame, bg='#374151')
+        control_row.pack(fill='x', padx=10, pady=(5, 10))
+        
+        self.start_button = tk.Button(control_row, text="START", 
+                                    command=self.start_agent, bg='#10B981', fg='white', width=10, font=('Arial', 10, 'bold'))
+        self.start_button.pack(side='left', padx=5)
+        
+        self.pause_button = tk.Button(control_row, text="PAUSE", 
+                                    command=self.toggle_pause, bg='#F59E0B', fg='white', width=10)
+        self.pause_button.pack(side='left', padx=5)
+        
+        self.reset_button = tk.Button(control_row, text="RESET", 
+                                    command=self.reset_agent, bg='#EF4444', fg='white', width=10)
+        self.reset_button.pack(side='left', padx=5)
+        
+        # === GOALS SYSTEM ===
+        goals_frame = tk.LabelFrame(self.goals_tab, text="Goals System", 
+                                  bg='#374151', fg='white', font=('Arial', 12, 'bold'))
+        goals_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        # Current goal display
+        current_goal_frame = tk.Frame(goals_frame, bg='#374151')
+        current_goal_frame.pack(fill='x', padx=10, pady=(10, 5))
+        
+        tk.Label(current_goal_frame, text="Current Goal:", bg='#374151', fg='white', font=('Arial', 10, 'bold')).pack(side='left')
+        
+        self.current_goal_label = tk.Label(current_goal_frame, text="No active goal", 
+                                         bg='#374151', fg='#9CA3AF', font=('Arial', 10))
+        self.current_goal_label.pack(side='left', padx=(10, 0))
+        
+        # Goals list
+        goals_list_frame = tk.Frame(goals_frame, bg='#374151')
+        goals_list_frame.pack(fill='both', expand=True, padx=10, pady=5)
+        
+        tk.Label(goals_list_frame, text="Active Goals:", bg='#374151', fg='white', font=('Arial', 10, 'bold')).pack(anchor='w')
+        
+        self.goals_text = tk.Text(goals_list_frame, height=8, bg='#111827', fg='#10B981',
+                                font=('Courier', 9), state='disabled')
+        
+        goals_scrollbar = ttk.Scrollbar(goals_list_frame, orient='vertical', command=self.goals_text.yview)
+        self.goals_text.configure(yscrollcommand=goals_scrollbar.set)
+        
+        self.goals_text.pack(side='left', fill='both', expand=True)
+        goals_scrollbar.pack(side='right', fill='y')
+        
+        # Goal controls
+        goal_controls_frame = tk.Frame(goals_frame, bg='#374151')
+        goal_controls_frame.pack(fill='x', padx=10, pady=(5, 10))
+        
+        self.pause_goals_button = tk.Button(goal_controls_frame, text="Pause Goals", 
+                                          command=self.toggle_goals_system, bg='#6B7280', fg='white', width=12)
+        self.pause_goals_button.pack(side='left', padx=5)
+        
+        self.clear_goals_button = tk.Button(goal_controls_frame, text="Clear Goals", 
+                                          command=self.clear_all_goals, bg='#DC2626', fg='white', width=12)
+        self.clear_goals_button.pack(side='left', padx=5)
+        
+        self.goals_status_label = tk.Label(goal_controls_frame, text="Goals: Active", 
+                                         bg='#374151', fg='#10B981', font=('Arial', 9))
+        self.goals_status_label.pack(side='right', padx=10)
+        
+    def on_detection_method_change(self):
+        """Handle detection method radio button changes"""
+        method = self.detection_var.get()
+        if method == "ml":
+            # Enable ML detection
+            self.agent.use_ml_detection = True
+            self.ml_status_label.config(text="Status: ML detection active", fg='#10B981')
+            self.add_to_history("ML DETECTION ENABLED - Using neural network for state recognition", "System")
+        else:
+            # Use traditional detection
+            self.agent.use_ml_detection = False
+            self.ml_status_label.config(text="Status: Traditional detection active", fg='#9CA3AF')
+            self.add_to_history("TRADITIONAL DETECTION ENABLED - Using color-based recognition", "System")
+    
+    def on_agent_type_change(self):
+        """Handle agent type radio button changes"""
+        agent_type = self.agent_var.get()
+        if agent_type == "neural":
+            # Initialize neural agent 
+            if not hasattr(self.agent, 'neural_agent') or self.agent.neural_agent is None:
+                self.initialize_neural_agent()
+            self.agent.use_neural_agent = True
+            self.neural_status_label.config(text="Status: Neural agent active", fg='#10B981')
+            self.add_to_history("NEURAL AGENT ENABLED - Using TensorFlow for intelligent decisions", "System")
+        else:
+            # Use rule-based agent
+            self.agent.use_neural_agent = False
+            self.neural_status_label.config(text="Status: Rule-based agent active", fg='#9CA3AF')
+            self.add_to_history("RULE-BASED AGENT ENABLED - Using traditional decision logic", "System")
+    
+    def reset_agent(self):
+        """Reset agent state"""
+        try:
+            # Reset memory systems
+            if hasattr(self.agent, 'memory_system'):
+                self.agent.memory_system.reset()
+            
+            # Reset goal system
+            if hasattr(self.agent, 'goal_system'):
+                self.agent.goal_system.reset()
+                
+            # Reset neural agent if it exists
+            if hasattr(self.agent, 'neural_agent') and self.agent.neural_agent:
+                self.agent.neural_agent.action_history.clear()
+                self.agent.neural_agent.reward_history.clear()
+            
+            self.add_to_history("AGENT RESET - All systems reinitialized", "System")
+            self.status_label.config(text="Status: Reset complete", fg='#10B981')
+            
+        except Exception as e:
+            self.add_to_history(f"RESET ERROR: {str(e)}", "Error")
+            self.status_label.config(text="Status: Reset failed", fg='#EF4444')
+        
+    def create_controller_layout(self, parent):
+        controller_grid = tk.Frame(parent, bg='#374151')
+        controller_grid.pack(expand=True, fill='both', padx=20, pady=20)
+        
+        for i in range(8):
+            controller_grid.grid_rowconfigure(i, weight=1)
+        for i in range(10):
+            controller_grid.grid_columnconfigure(i, weight=1)
+        
+        # Create buttons
+        self.l_button = self.create_button(controller_grid, 'L', 0, 1, 2, 1)
+        self.r_button = self.create_button(controller_grid, 'R', 0, 7, 2, 1)
+        
+        self.up_button = self.create_button(controller_grid, 'UP', 3, 1, 1, 1, 'up')
+        self.down_button = self.create_button(controller_grid, 'DOWN', 5, 1, 1, 1, 'down')
+        self.left_button = self.create_button(controller_grid, 'LEFT', 4, 0, 1, 1, 'left')
+        self.right_button = self.create_button(controller_grid, 'RIGHT', 4, 2, 1, 1, 'right')
+        
+        center_frame = tk.Frame(controller_grid, bg='#D1D5DB', relief='raised', bd=1)
+        center_frame.grid(row=4, column=1, sticky='nsew', padx=2, pady=2)
+        tk.Label(center_frame, text='+', bg='#D1D5DB', fg='#374151', font=('Arial', 12, 'bold')).pack(expand=True)
+        
+        self.a_button = self.create_button(controller_grid, 'A', 3, 8, 1, 1, 'A')
+        self.b_button = self.create_button(controller_grid, 'B', 4, 7, 1, 1, 'B')
+        
+        self.select_button = self.create_button(controller_grid, 'SEL', 6, 3, 1, 1, 'select')
+        self.start_button = self.create_button(controller_grid, 'START', 6, 6, 1, 1, 'start')
+        
+        self.buttons = {
+            'up': self.up_button, 'down': self.down_button, 'left': self.left_button, 'right': self.right_button,
+            'A': self.a_button, 'B': self.b_button, 'L': self.l_button, 'R': self.r_button,
+            'select': self.select_button, 'start': self.start_button
+        }
+        
+    def create_button(self, parent, text, row, col, rowspan=1, colspan=1, button_name=None):
+        if button_name is None:
+            button_name = text
+            
+        button = tk.Label(parent, text=text, bg='#D1D5DB', fg='#374151',
+                         font=('Arial', 10, 'bold'), relief='raised', bd=2)
+        button.grid(row=row, column=col, rowspan=rowspan, columnspan=colspan,
+                   sticky='nsew', padx=2, pady=2)
+        return button
+    
+    def has_focus(self):
+        """Check if the VGA window has focus"""
+        try:
+            # Check if the tkinter window is focused
+            return self.root.focus_displayof() is not None
+        except:
+            # If we can't determine focus, assume we don't have it to be safe
+            return False
+        
+    def start_keyboard_listener(self):
+        def on_press(key):
+            try:
+                # Only process keys if VGA window has focus or it's the global hotkey 'q'
+                key_str = str(key).replace("'", "")
+                if key_str in ['q', 'Q'] or self.has_focus():
+                    self.update_queue.put(('key_press', key))
+            except Exception as e:
+                # Silently ignore keyboard errors to prevent crashes
+                pass
+            
+        def on_release(key):
+            try:
+                # Only process keys if VGA window has focus
+                if self.has_focus():
+                    self.update_queue.put(('key_release', key))
+            except Exception as e:
+                # Silently ignore keyboard errors to prevent crashes
+                pass
+            
+        try:
+            self.listener = keyboard.Listener(on_press=on_press, on_release=on_release)
+            self.listener.start()
+        except Exception as e:
+            print(f"Warning: Could not start keyboard listener: {e}")
+            print("Manual controls will still work through the GUI")
+        
+    def process_updates(self):
+        # Circuit breaker - disable updates if too many errors
+        if self.updates_disabled:
+            try:
+                self.root.after(1000, self.process_updates)  # Check again in 1 second
+            except:
+                pass
+            return
+            
+        try:
+            while True:
+                try:
+                    action, data = self.update_queue.get_nowait()
+                    
+                    if action == 'key_press':
+                        self.handle_key_press(data)
+                    elif action == 'key_release':
+                        self.handle_key_release(data)
+                    elif action == 'ai_action':
+                        button_name, action_type = data
+                        self.handle_ai_action(button_name, action_type)
+                    elif action == 'update_brain':
+                        self.update_brain_display()
+                        self.update_memory_display()
+                        self.update_goals_display()
+                        
+                except Exception as e:
+                    # Rate-limited error logging to prevent spam
+                    current_time = time.time()
+                    if current_time - self.last_error_time > 1.0:  # Reset every second
+                        self.error_count = 0
+                        self.last_error_time = current_time
+                    
+                    self.error_count += 1
+                    self.total_error_count += 1
+                    
+                    if self.error_count <= self.max_errors_per_second:
+                        print(f"Error processing update: {e}")
+                    elif self.error_count == self.max_errors_per_second + 1:
+                        print("Too many errors - suppressing further error messages for 1 second")
+                    
+                    # Circuit breaker
+                    if self.total_error_count >= self.max_total_errors:
+                        print(f"CRITICAL: Too many errors ({self.total_error_count}). Disabling updates to prevent spam.")
+                        self.updates_disabled = True
+                        return
+                    
+        except queue.Empty:
+            pass
+        except Exception as e:
+            # Catch any other errors to prevent crashes - but don't spam
+            if hasattr(self, 'last_loop_error_time'):
+                if time.time() - self.last_loop_error_time > 5.0:  # Only log every 5 seconds
+                    print(f"Error in update loop: {e}")
+                    self.last_loop_error_time = time.time()
+            else:
+                print(f"Error in update loop: {e}")
+                self.last_loop_error_time = time.time()
+        
+        try:
+            self.root.after(10, self.process_updates)
+        except:
+            # If we can't schedule the next update, the app is probably closing
+            pass
+        
+    def handle_key_press(self, key):
+        try:
+            key_str = str(key).replace("'", "")
+            
+            # Handle pause with 'q' - global hotkey
+            if key_str == 'q' or key_str == 'Q':
+                self.toggle_pause()
+                print(f"Q key detected globally - Agent paused/resumed")
+                return
+                
+            # Handle controller buttons only if VGA window has focus
+            button_name = self.key_map.get(key_str)
+            if button_name and self.root.focus_get() is not None:
+                self.activate_button(button_name)
+                self.add_to_history(button_name, "Keyboard")
+        except Exception as e:
+            # Silently handle key press errors to prevent crashes
+            pass
+            
+    def handle_key_release(self, key):
+        try:
+            key_str = str(key).replace("'", "")
+            button_name = self.key_map.get(key_str)
+            if button_name:
+                self.deactivate_button(button_name)
+        except Exception as e:
+            # Silently handle key release errors to prevent crashes
+            pass
+            
+    def handle_ai_action(self, button_name, action_type):
+        self.activate_button(button_name)
+        self.add_to_history(button_name, action_type)
+        self.root.after(200, lambda: self.deactivate_button(button_name))
+        
+    def activate_button(self, button_name):
+        if button_name in self.buttons:
+            button = self.buttons[button_name]
+            color = self.button_colors.get(button_name, '#9CA3AF')
+            button.config(bg=color, fg='white', relief='sunken')
+            
+    def deactivate_button(self, button_name):
+        if button_name in self.buttons:
+            button = self.buttons[button_name]
+            button.config(bg='#D1D5DB', fg='#374151', relief='raised')
+            
+    def add_to_history(self, button_name, source):
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        entry = f"{timestamp} - {button_name} ({source})\n"
+        
+        self.input_history.append(entry)
+        if len(self.input_history) > self.max_history:
+            self.input_history.pop(0)
+            
+        self.update_history_display()
+        
+    def update_history_display(self):
+        self.history_text.config(state='normal')
+        self.history_text.delete('1.0', tk.END)
+        
+        if not self.input_history:
+            self.history_text.insert('1.0', "No inputs yet...")
+        else:
+            for entry in reversed(self.input_history):
+                self.history_text.insert('1.0', entry)
+                
+        self.history_text.config(state='disabled')
+        
+    def update_brain_display(self):
+        # Update game state
+        self.state_text.config(state='normal')
+        self.state_text.delete('1.0', tk.END)
+        
+        if self.agent.last_state:
+            state_info = f"Current State: {self.agent.last_state}\n"
+            state_info += f"Paused: {self.agent.paused}\n"
+            state_info += f"Strategy: {self.agent.exploration_strategy}\n"
+            state_info += f"Stuck Counter: {self.agent.stuck_counter}/30\n"
+            state_info += f"Goal Type: {self.agent.current_goal_type}\n"
+            state_info += f"Path Length: {len(self.agent.current_path)}\n"
+            state_info += f"Path Step: {self.agent.path_step}/{len(self.agent.current_path)}"
+            self.state_text.insert('1.0', state_info)
+        else:
+            self.state_text.insert('1.0', "No game state detected yet...")
+            
+        self.state_text.config(state='disabled')
+        
+        # Update screen analysis
+        self.analysis_text.config(state='normal')
+        self.analysis_text.delete('1.0', tk.END)
+        
+        if self.agent.current_analysis:
+            analysis_info = ""
+            for key, value in self.agent.current_analysis.items():
+                analysis_info += f"{key}: {value}\n"
+            self.analysis_text.insert('1.0', analysis_info)
+        else:
+            self.analysis_text.insert('1.0', "No screen analysis yet...")
+            
+        self.analysis_text.config(state='disabled')
+        
+        # Update ML predictions display
+        self.update_ml_display()
+        
+        # Update parallel AI performance display
+        self.update_parallel_performance_display()
+        
+        # Update autonomous training display
+        self.update_autonomous_training_display()
+        
+        # Update emulator safety status
+        self.update_emulator_status_display()
+        
+        # Update decision log
+        self.decisions_text.config(state='normal')
+        self.decisions_text.delete('1.0', tk.END)
+        
+        if self.agent.decision_log:
+            for decision in reversed(self.agent.decision_log):
+                entry = f"{decision['timestamp']} - {decision['action']}\n"
+                entry += f"  State: {decision['state']}\n"
+                entry += f"  Reason: {decision['reasoning']}\n\n"
+                self.decisions_text.insert('1.0', entry)
+        else:
+            self.decisions_text.insert('1.0', "No decisions logged yet...")
+            
+        self.decisions_text.config(state='disabled')
+        
+    def update_memory_display(self):
+        if not self.agent.memory_initialized:
+            return
+            
+        # Update memory statistics
+        self.memory_stats_text.config(state='normal')
+        self.memory_stats_text.delete('1.0', tk.END)
+        
+        stats = self.agent.memory.get_memory_stats()
+        if stats:
+            stats_info = f"Game: {stats.get('game_title', 'Unknown')}\n"
+            stats_info += f"Areas Discovered: {stats.get('areas_discovered', 0)}\n"
+            stats_info += f"Tiles Visited: {stats.get('tiles_visited', 0)}\n"
+            stats_info += f"Pokemon Seen: {stats.get('pokemon_seen', 0)}\n"
+            stats_info += f"Steps Taken: {stats.get('steps_taken', 0)}\n"
+            stats_info += f"Current Area: {stats.get('current_area', 'Unknown')}"
+            self.memory_stats_text.insert('1.0', stats_info)
+        else:
+            self.memory_stats_text.insert('1.0', "Memory not initialized yet...")
+            
+        self.memory_stats_text.config(state='disabled')
+        
+        # Update discovered areas
+        self.areas_text.config(state='normal')
+        self.areas_text.delete('1.0', tk.END)
+        
+        if self.agent.memory.memory_data and "areas" in self.agent.memory.memory_data:
+            areas_info = ""
+            for area_hash, area_data in self.agent.memory.memory_data["areas"].items():
+                name = area_data.get("name", "Unknown")
+                visits = area_data.get("visit_count", 0)
+                state = area_data.get("game_state", "Unknown")
+                areas_info += f"{name} ({state}) - {visits} visits\n"
+            
+            if areas_info:
+                self.areas_text.insert('1.0', areas_info)
+            else:
+                self.areas_text.insert('1.0', "No areas discovered yet...")
+        else:
+            self.areas_text.insert('1.0', "No areas discovered yet...")
+            
+        self.areas_text.config(state='disabled')
+        
+        # Update landmarks
+        self.landmarks_text.config(state='normal')
+        self.landmarks_text.delete('1.0', tk.END)
+        
+        if self.agent.memory.memory_data and "world_map" in self.agent.memory.memory_data:
+            landmarks = self.agent.memory.memory_data["world_map"]["landmarks"]
+            landmarks_info = ""
+            
+            for landmark_type, landmark_list in landmarks.items():
+                if landmark_list:
+                    landmarks_info += f"\n{landmark_type.replace('_', ' ').title()}:\n"
+                    for landmark in landmark_list:
+                        x, y, name, timestamp = landmark
+                        landmarks_info += f"  ({x}, {y}) - {name}\n"
+            
+            if landmarks_info:
+                self.landmarks_text.insert('1.0', landmarks_info.strip())
+            else:
+                self.landmarks_text.insert('1.0', "No landmarks discovered yet...")
+        else:
+            self.landmarks_text.insert('1.0', "No landmarks discovered yet...")
+            
+        self.landmarks_text.config(state='disabled')
+        
+    def determine_health_status(self, screen_analysis: Dict[str, Any]) -> str:
+        """Determine team health status from screen analysis"""
+        # For now, assume team is healthy unless we're actively in a battle situation
+        # This prevents unnecessary healing goals when team is at full HP
+        if screen_analysis.get('health_bar_visible'):
+            # Only report medium/low health if we're in a battle context
+            # This prevents false positives that cause constant healing goals
+            return "healthy"  # Default to healthy unless we can detect actual low health
+        return "healthy"
+    
+    def update_goals_display(self):
+        if not hasattr(self.agent, 'goal_system'):
+            return
+            
+        # Update current goal
+        self.current_goal_text.config(state='normal')
+        self.current_goal_text.delete('1.0', tk.END)
+        
+        current_goal = self.agent.current_goal
+        if current_goal and hasattr(current_goal, 'name'):
+            goal_info = f"Goal: {current_goal.name}\n"
+            goal_info += f"Priority: {current_goal.priority.name}\n"
+            goal_info += f"Progress: {current_goal.progress:.1%}\n"
+            goal_info += f"Description: {current_goal.description}"
+            self.current_goal_text.insert('1.0', goal_info)
+        elif current_goal:
+            # Handle case where current_goal is not a proper Goal object
+            self.current_goal_text.insert('1.0', f"Goal object error: {type(current_goal)}")
+        else:
+            self.current_goal_text.insert('1.0', "No active goal")
+            
+        self.current_goal_text.config(state='disabled')
+        
+        # Update goal queue
+        self.goal_queue_text.config(state='normal')
+        self.goal_queue_text.delete('1.0', tk.END)
+        
+        queue_info = ""
+        for i, goal_id in enumerate(self.agent.goal_system.goal_queue[:10]):  # Show top 10
+            if goal_id in self.agent.goal_system.goals:
+                goal = self.agent.goal_system.goals[goal_id]
+                if goal.status.value == "active":
+                    queue_info += f"{i+1}. [{goal.priority.name}] {goal.name}\n"
+        
+        if queue_info:
+            self.goal_queue_text.insert('1.0', queue_info)
+        else:
+            self.goal_queue_text.insert('1.0', "No goals in queue")
+            
+        self.goal_queue_text.config(state='disabled')
+        
+        # Update goal statistics
+        self.goal_stats_text.config(state='normal')
+        self.goal_stats_text.delete('1.0', tk.END)
+        
+        summary = self.agent.goal_system.get_goals_summary()
+        stats_info = f"Total Goals: {summary.get('total_goals', 0)}\n"
+        stats_info += f"Active: {summary.get('active_goals', 0)}\n"
+        stats_info += f"Completed: {summary.get('completed_goals', 0)}\n"
+        stats_info += f"Failed: {summary.get('failed_goals', 0)}\n"
+        stats_info += f"Success Rate: {self.calculate_success_rate(summary):.1%}"
+        
+        self.goal_stats_text.insert('1.0', stats_info)
+        self.goal_stats_text.config(state='disabled')
+        
+        # Update completed goals
+        self.completed_goals_text.config(state='normal')
+        self.completed_goals_text.delete('1.0', tk.END)
+        
+        completed_info = ""
+        recent_completed = self.agent.goal_system.completed_goals[-10:]  # Show last 10
+        for goal_id in reversed(recent_completed):
+            if goal_id in self.agent.goal_system.goals:
+                goal = self.agent.goal_system.goals[goal_id]
+                completed_info += f"[DONE] {goal.name} ({goal.priority.name})\n"
+        
+        if completed_info:
+            self.completed_goals_text.insert('1.0', completed_info)
+        else:
+            self.completed_goals_text.insert('1.0', "No completed goals yet")
+            
+        self.completed_goals_text.config(state='disabled')
+    
+    def calculate_success_rate(self, summary: Dict[str, Any]) -> float:
+        """Calculate goal success rate"""
+        completed = summary.get('completed_goals', 0)
+        failed = summary.get('failed_goals', 0)
+        total_finished = completed + failed
+        
+        if total_finished == 0:
+            return 0.0
+        
+        return completed / total_finished
+    
+    def force_explore_goal(self):
+        """Manually create an exploration goal"""
+        if hasattr(self.agent, 'goal_system'):
+            # Clear existing goals and create exploration goal
+            self.agent.goal_system.goal_queue.clear()
+            goal = self.agent.goal_system.create_goal(
+                f"manual_explore_{time.time()}",
+                "Force Auto Exploration",
+                "User-requested automatic exploration of new areas",
+                GoalPriority.HIGH,
+                "explore_area",
+                {"exploration_type": "systematic", "target_areas": ["unknown_areas"]}
+            )
+            self.add_to_history("FORCE AUTO EXPLORE GOAL", "User")
+    
+    def force_heal_goal(self):
+        """Manually create a healing goal"""
+        if hasattr(self.agent, 'goal_system'):
+            goal = self.agent.goal_system.create_goal(
+                f"manual_heal_{time.time()}",
+                "Manual Healing",
+                "User-requested team healing",
+                GoalPriority.CRITICAL,
+                "heal_pokemon",
+                {"urgency": "manual", "target": "pokemon_center"}
+            )
+            self.add_to_history("MANUAL HEAL GOAL", "User")
+    
+    def clear_all_goals(self):
+        """Clear all active goals"""
+        if hasattr(self.agent, 'goal_system'):
+            self.agent.goal_system.goal_queue.clear()
+            self.agent.goal_system.goals.clear()
+            self.agent.current_goal = None
+            self.add_to_history("CLEARED ALL GOALS", "User")
+    
+    def toggle_goal_system(self):
+        """Toggle goal system on/off"""
+        if hasattr(self.agent, 'goal_system_paused'):
+            self.agent.goal_system_paused = not self.agent.goal_system_paused
+        else:
+            self.agent.goal_system_paused = True
+        
+        status = "PAUSED" if self.agent.goal_system_paused else "RESUMED"
+        button_text = "Resume Goals" if self.agent.goal_system_paused else "Pause Goals"
+        status_text = "Goal System: Paused" if self.agent.goal_system_paused else "Goal System: Active"
+        status_color = "#EF4444" if self.agent.goal_system_paused else "#10B981"
+        
+        self.pause_goals_button.config(text=button_text)
+        self.goal_system_status.config(text=status_text, fg=status_color)
+        self.add_to_history(f"GOAL SYSTEM {status}", "User")
+    
+    def force_battle_state(self):
+        """Force the agent to treat current state as battle"""
+        if hasattr(self.agent, 'state_override'):
+            self.agent.state_override = "Battle"
+        else:
+            self.agent.state_override = "Battle"
+        self.current_state_label.config(text="State: BATTLE (Override)", fg='#DC2626')
+        self.add_to_history("FORCE BATTLE STATE", "User")
+    
+    def force_overworld_state(self):
+        """Force the agent to treat current state as overworld"""
+        if hasattr(self.agent, 'state_override'):
+            self.agent.state_override = "Overworld"
+        else:
+            self.agent.state_override = "Overworld"
+        self.current_state_label.config(text="State: OVERWORLD (Override)", fg='#059669')
+        self.add_to_history("FORCE OVERWORLD STATE", "User")
+    
+    def clear_state_override(self):
+        """Clear state override and return to auto-detection"""
+        if hasattr(self.agent, 'state_override'):
+            self.agent.state_override = None
+        self.current_state_label.config(text="State: Auto-detect", fg='#9CA3AF')
+        self.add_to_history("CLEAR STATE OVERRIDE", "User")
+    
+    # ML Detection Methods
+    def toggle_ml_detection(self):
+        """Toggle between traditional and ML detection"""
+        self.agent.use_ml_detection = not self.agent.use_ml_detection
+        
+        if self.agent.use_ml_detection:
+            if not self.agent.ml_model_loaded:
+                # Try to load model first
+                if not self.load_ml_model():
+                    self.agent.use_ml_detection = False
+                    return
+            
+            self.ml_toggle_button.config(text="Use Traditional", bg='#F59E0B')
+            self.ml_status_label.config(text="ML Detection Active", fg='#10B981')
+            self.add_to_history("SWITCHED TO ML DETECTION", "User")
+        else:
+            self.ml_toggle_button.config(text="Use ML Detection", bg='#8B5CF6')
+            self.ml_status_label.config(text="Traditional Detection", fg='#9CA3AF')
+            self.add_to_history("SWITCHED TO TRADITIONAL DETECTION", "User")
+    
+    def load_ml_model(self):
+        """Load the ML model"""
+        try:
+            # Try loading with appropriate backend
+            if ML_BACKEND == "sklearn":
+                success = self.agent.ml_detector.load_model(model_type="random_forest")
+            else:
+                success = self.agent.ml_detector.load_model()
+                
+            if success:
+                self.agent.ml_model_loaded = True
+                self.ml_status_label.config(text=f"Model Loaded ({ML_BACKEND})", fg='#10B981')
+                self.add_to_history(f"ML MODEL LOADED ({ML_BACKEND})", "System")
+                return True
+            else:
+                self.ml_status_label.config(text="No Model Found", fg='#EF4444')
+                self.add_to_history("ML MODEL NOT FOUND", "System")
+                return False
+        except Exception as e:
+            self.ml_status_label.config(text="Model Load Error", fg='#EF4444')
+            self.add_to_history(f"ML MODEL ERROR: {str(e)}", "System")
+            return False
+    
+    def train_ml_model(self):
+        """Train the ML model with collected data"""
+        try:
+            # Check data availability first
+            stats = self.agent.ml_detector.get_data_collection_stats()
+            if stats['total'] < 50:  # Minimum samples needed
+                self.add_to_history(f"NEED MORE DATA: Only {stats['total']} samples", "System")
+                self.ml_status_label.config(text=f"Need more data ({stats['total']}/50)", fg='#F59E0B')
+                return
+            
+            self.ml_status_label.config(text="Training...", fg='#F59E0B')
+            self.add_to_history("STARTING ML TRAINING", "System")
+            
+            # Train in background (this might take a while)
+            self.root.after(100, self._train_model_async)
+            
+        except Exception as e:
+            self.ml_status_label.config(text="Training Error", fg='#EF4444')
+            self.add_to_history(f"TRAINING ERROR: {str(e)}", "System")
+    
+    def _train_model_async(self):
+        """Train model asynchronously"""
+        try:
+            # Check which ML backend we're using
+            if ML_BACKEND == "sklearn":
+                success = self.agent.ml_detector.train_model(model_type="random_forest")
+            else:
+                success = self.agent.ml_detector.train_model(epochs=30)
+                
+            if success:
+                self.agent.ml_model_loaded = True
+                self.ml_status_label.config(text="Training Complete", fg='#10B981')
+                self.add_to_history(f"ML TRAINING COMPLETED ({ML_BACKEND})", "System")
+            else:
+                self.ml_status_label.config(text="Training Failed", fg='#EF4444')
+                self.add_to_history("ML TRAINING FAILED", "System")
+        except Exception as e:
+            self.ml_status_label.config(text="Training Error", fg='#EF4444')
+            self.add_to_history(f"TRAINING ERROR: {str(e)}", "System")
+    
+    def collect_training_data(self):
+        """Collect training data with current state label"""
+        try:
+            # Use clean frame for training if available, otherwise use regular frame
+            training_frame = self.agent.current_ml_frame if self.agent.current_ml_frame is not None else self.agent.current_frame
+            if training_frame is None:
+                self.add_to_history("NO FRAME TO COLLECT", "System")
+                return
+            
+            selected_state = self.state_var.get()
+            success = self.agent.ml_detector.collect_training_data(
+                training_frame, selected_state, auto_save=True, manual_collection=True
+            )
+            
+            if success:
+                stats = self.agent.ml_detector.get_data_collection_stats()
+                self.add_to_history(f"DATA COLLECTED: {selected_state} ({stats[selected_state]} total)", "System")
+            else:
+                self.add_to_history("DATA COLLECTION FAILED", "System")
+                
+        except Exception as e:
+            self.add_to_history(f"COLLECTION ERROR: {str(e)}", "System")
+    
+    def show_data_stats(self):
+        """Show data collection statistics"""
+        try:
+            print("Data Stats button clicked!")  # Debug print
+            stats = self.agent.ml_detector.get_data_collection_stats()
+            print(f"Got stats: {stats}")  # Debug print
+            
+            # Create a popup window for better visibility
+            stats_window = tk.Toplevel(self.root)
+            stats_window.title("ML Training Data Statistics")
+            stats_window.geometry("400x300")
+            stats_window.configure(bg='#374151')
+            
+            # Create text widget for stats
+            stats_text = tk.Text(stats_window, bg='#1F2937', fg='#D1D5DB', 
+                               font=('Consolas', 10), wrap=tk.WORD)
+            stats_text.pack(fill='both', expand=True, padx=10, pady=10)
+            
+            # Build stats display
+            stats_content = "ML Training Data Statistics\n"
+            stats_content += "=" * 40 + "\n\n"
+            
+            for state, count in stats.items():
+                if state != 'total':
+                    stats_content += f"{state:15} {count:3} samples\n"
+            
+            stats_content += "\n" + "-" * 40 + "\n"
+            stats_content += f"{'TOTAL':15} {stats['total']:3} samples\n\n"
+            
+            # Add recommendations
+            if stats['total'] < 50:
+                stats_content += "WARNING: Need at least 50 samples to train\n"
+            elif stats['total'] < 100:
+                stats_content += "READY: Ready to train (more data = better accuracy)\n"
+            else:
+                stats_content += "GOOD: Great dataset size!\n"
+            
+            stats_text.insert('1.0', stats_content)
+            stats_text.config(state=tk.DISABLED)
+            
+            # Also add to history
+            self.add_to_history("=== DATA COLLECTION STATS ===", "System")
+            for state, count in stats.items():
+                if state != 'total':
+                    self.add_to_history(f"{state}: {count} samples", "System")
+            self.add_to_history(f"TOTAL: {stats['total']} samples", "System")
+            self.add_to_history("===============================", "System")
+            
+        except Exception as e:
+            print(f"Stats error: {e}")  # Debug print
+            self.add_to_history(f"STATS ERROR: {str(e)}", "System")
+            # Show error in popup too
+            import traceback
+            error_window = tk.Toplevel(self.root)
+            error_window.title("Stats Error")
+            error_window.geometry("500x200")
+            error_text = tk.Text(error_window, wrap=tk.WORD)
+            error_text.pack(fill='both', expand=True, padx=10, pady=10)
+            error_text.insert('1.0', f"Error: {str(e)}\n\nFull traceback:\n{traceback.format_exc()}")
+            error_text.config(state=tk.DISABLED)
+    
+    def toggle_autonomous_training(self):
+        """Toggle autonomous training on/off"""
+        try:
+            current_state = self.agent.ml_detector.auto_collection_enabled
+            self.agent.ml_detector.enable_autonomous_training(not current_state)
+            
+            if self.agent.ml_detector.auto_collection_enabled:
+                self.auto_train_button.config(text="Auto-Train ON", bg='#10B981')
+                
+                # Auto-collection works by collecting data during state detection
+                # It doesn't require ML detection to be the primary method
+                if not self.agent.use_ml_detection and not self.agent.ml_model_loaded:
+                    self.add_to_history("Auto-collection will use rule-based detection for data labeling", "System")
+                
+                # Try to load model if not loaded (optional for data collection)
+                if not self.agent.ml_model_loaded:
+                    self.add_to_history("No ML model loaded - will collect data for future training", "System")
+                    # Don't try to load a non-existent model, just continue with data collection
+                
+                self.add_to_history("AUTONOMOUS TRAINING ENABLED", "System")
+                self.add_to_history("Will auto-collect high-confidence samples for training", "System")
+            else:
+                self.auto_train_button.config(text="Auto-Train OFF", bg='#6B7280')
+                self.add_to_history("AUTONOMOUS TRAINING DISABLED", "System")
+                
+        except Exception as e:
+            self.add_to_history(f"AUTO-TRAIN ERROR: {str(e)}", "System")
+    
+    def toggle_manual_review(self):
+        """Toggle manual data collection review"""
+        try:
+            current_state = self.agent.ml_detector.manual_review_enabled
+            self.agent.ml_detector.enable_manual_review(not current_state)
+            
+            if self.agent.ml_detector.manual_review_enabled:
+                self.manual_review_button.config(text="Review Manual ON", bg='#10B981')
+                self.add_to_history("MANUAL REVIEW ENABLED - Manual collections go to review queue", "System")
+            else:
+                self.manual_review_button.config(text="Review Manual OFF", bg='#6B7280')
+                self.add_to_history("MANUAL REVIEW DISABLED - Manual collections save immediately", "System")
+                
+        except Exception as e:
+            self.add_to_history(f"MANUAL REVIEW ERROR: {str(e)}", "System")
+    
+    def toggle_neural_mode(self):
+        """Toggle between simple and neural agent"""
+        try:
+            if hasattr(self.agent, 'neural_agent') and self.agent.neural_agent is not None:
+                # Toggle mode
+                if hasattr(self.agent, 'use_neural_agent'):
+                    self.agent.use_neural_agent = not self.agent.use_neural_agent
+                else:
+                    self.agent.use_neural_agent = True
+                    
+                if self.agent.use_neural_agent:
+                    self.neural_mode_button.config(text="Neural Agent", bg='#7C3AED')
+                    self.neural_status_label.config(text="Neural Mode Active", fg='#10B981')
+                    self.add_to_history("SWITCHED TO NEURAL AGENT", "System")
+                else:
+                    self.neural_mode_button.config(text="Simple Agent", bg='#374151')
+                    self.neural_status_label.config(text="Simple Mode Active", fg='#10B981')
+                    self.add_to_history("SWITCHED TO SIMPLE AGENT", "System")
+            else:
+                self.add_to_history("NEURAL AGENT NOT INITIALIZED", "System")
+                
+        except Exception as e:
+            self.add_to_history(f"NEURAL MODE ERROR: {str(e)}", "System")
+    
+    def initialize_universal_ai(self):
+        """Initialize the Universal AI system"""
+        if not UNIVERSAL_AI_AVAILABLE:
+            self.add_to_history("Universal AI components not available", "System")
+            return False
+            
+        try:
+            self.add_to_history("INITIALIZING UNIVERSAL AI BRIDGE...", "System")
+            
+            # Create Universal AI Bridge
+            self.agent.universal_ai_bridge = create_vga_ai_bridge(
+                enable_ai=True,
+                platform="gameboy"
+            )
+            self.agent.use_universal_ai = True
+            
+            # Test the bridge
+            status = self.agent.universal_ai_bridge.get_status()
+            self.add_to_history(f"SUCCESS: Universal AI Bridge initialized successfully", "System")
+            self.add_to_history(f"   AI Available: {status['universal_ai_available']}", "System")
+            self.add_to_history(f"   Platform: {status['platform_hint']}", "System")
+            
+            return True
+            
+        except Exception as e:
+            self.add_to_history(f"ERROR: Universal AI initialization failed: {str(e)}", "System")
+            self.agent.use_universal_ai = False
+            return False
+
+    def collect_current_screenshot(self):
+        """Collect current screenshot for pending review (no dropdown needed)"""
+        try:
+            self.add_to_history("Manual screenshot collection requested", "System")
+            
+            # Try to find emulator window if not set
+            if not hasattr(self, 'emulator_window') or not self.emulator_window:
+                self.add_to_history("Looking for emulator window...", "System")
+                from .perception.screen_reader import find_emulator_window
+                self.emulator_window = find_emulator_window()
+                
+            if not self.emulator_window:
+                self.add_to_history("ERROR: No emulator window found. Please start your emulator first.", "System")
+                return
+                
+            self.add_to_history("Capturing screenshot...", "System")
+            
+            # Capture current frame
+            game_frame = None
+            if self.agent.use_clean_screenshots:
+                try:
+                    from .perception.screen_reader import capture_emulator_without_overlay
+                    game_frame = capture_emulator_without_overlay(self.emulator_window, debug=False)
+                    self.add_to_history("Captured clean screenshot", "System")
+                except Exception as clean_error:
+                    self.add_to_history(f"Clean capture failed: {clean_error}, trying regular capture", "System")
+                    from .perception.screen_reader import capture_window
+                    game_frame = capture_window(self.emulator_window)
+            else:
+                from .perception.screen_reader import capture_window
+                game_frame = capture_window(self.emulator_window)
+                self.add_to_history("Captured regular screenshot", "System")
+            
+            if game_frame is None:
+                self.add_to_history("ERROR: Failed to capture screenshot from emulator", "System")
+                return
+            
+            # Add to pending review (will be labeled later)
+            self.add_to_history("Adding screenshot to pending review...", "System")
+            pending_count = self.agent.ml_detector.add_to_pending_review(game_frame)
+            
+            # Update review button
+            self.review_button.config(text=f"Review: {pending_count}")
+            
+            self.add_to_history(f"SUCCESS: Screenshot added to pending review ({pending_count} total)", "System")
+            
+        except Exception as e:
+            self.add_to_history(f"ERROR: Screenshot collection failed: {e}", "System")
+            import traceback
+            self.add_to_history(f"Traceback: {traceback.format_exc()}", "System")
+
+    def on_agent_type_change(self):
+        """Handle agent type radio button changes"""
+        agent_type = self.agent_var.get()
+        
+        # Update mode label
+        if hasattr(self, 'agent_mode_label'):
+            mode_text = {
+                'traditional': 'Traditional Agent',
+                'universal': 'Universal AI',
+                'neural': 'Neural Agent'
+            }.get(agent_type, 'Unknown')
+            self.agent_mode_label.config(text=f"Mode: {mode_text}")
+        
+        # Enable/disable appropriate systems based on selection
+        if agent_type == 'universal':
+            # Prioritize Universal AI
+            if hasattr(self.agent, 'universal_ai_bridge') and self.agent.universal_ai_bridge:
+                self.agent.use_universal_ai = True
+                self.agent.use_neural_agent = False
+        elif agent_type == 'neural':
+            # Prioritize Neural Agent
+            self.agent.use_universal_ai = False
+            if hasattr(self.agent, 'neural_agent') and self.agent.neural_agent:
+                self.agent.use_neural_agent = True
+        else:  # traditional
+            # Use legacy decision-making
+            self.agent.use_universal_ai = False
+            self.agent.use_neural_agent = False
+        
+        self.add_to_history(f"Agent type changed to: {mode_text}", "System")
+
+    def start_agent(self):
+        """Start the agent (replaces the old start functionality)"""
+        try:
+            # Update status
+            self.status_label.config(text="Status: Running", fg='#10B981')
+            self.start_button.config(state='disabled')
+            self.pause_button.config(state='normal')
+            
+            # Unpause agent if paused
+            self.agent.paused = False
+            
+            # Start the main agent if not already running
+            if not hasattr(self, 'agent_thread') or not self.agent_thread.is_alive():
+                import threading
+                self.agent_thread = threading.Thread(target=self.run_agent, daemon=True)
+                self.agent_thread.start()
+            
+            self.add_to_history("AGENT STARTED", "System")
+            
+        except Exception as e:
+            self.add_to_history(f"Failed to start agent: {e}", "System")
+            self.status_label.config(text="Status: Error", fg='#EF4444')
+
+    def toggle_goals_system(self):
+        """Toggle goals system on/off"""
+        try:
+            if hasattr(self.agent, 'goal_system_paused'):
+                self.agent.goal_system_paused = not self.agent.goal_system_paused
+            else:
+                self.agent.goal_system_paused = True
+            
+            if self.agent.goal_system_paused:
+                self.pause_goals_button.config(text="Resume Goals", bg='#10B981')
+                self.goals_status_label.config(text="Goals: Paused", fg='#F59E0B')
+                self.add_to_history("GOALS SYSTEM PAUSED", "System")
+            else:
+                self.pause_goals_button.config(text="Pause Goals", bg='#6B7280')
+                self.goals_status_label.config(text="Goals: Active", fg='#10B981')
+                self.add_to_history("GOALS SYSTEM RESUMED", "System")
+                
+        except Exception as e:
+            self.add_to_history(f"Failed to toggle goals system: {e}", "System")
+
+    def clear_all_goals(self):
+        """Clear all active goals"""
+        try:
+            if hasattr(self.agent, 'goal_system'):
+                self.agent.goal_system.goals.clear()
+                self.agent.goal_system.goal_queue.clear()
+                self.agent.current_goal = None
+                
+                # Update UI
+                self.current_goal_label.config(text="No active goal")
+                
+                # Clear goals display
+                self.goals_text.config(state='normal')
+                self.goals_text.delete(1.0, tk.END)
+                self.goals_text.insert(tk.END, "No active goals")
+                self.goals_text.config(state='disabled')
+                
+                self.add_to_history("ALL GOALS CLEARED", "System")
+                
+        except Exception as e:
+            self.add_to_history(f"Failed to clear goals: {e}", "System")
+
+    def toggle_universal_ai_mode(self):
+        """Toggle Universal AI mode on/off"""
+        if not self.agent.universal_ai_bridge:
+            self.add_to_history("Universal AI Bridge not initialized", "System")
+            return
+            
+        try:
+            # Toggle the mode
+            new_state = not self.agent.use_universal_ai
+            success = self.agent.universal_ai_bridge.toggle_universal_ai(new_state)
+            
+            if success:
+                self.agent.use_universal_ai = new_state
+                
+                if self.agent.use_universal_ai:
+                    self.universal_ai_mode_button.config(text="Universal ON", bg='#10B981')
+                    self.universal_ai_status_label.config(text="Universal AI Active", fg='#10B981')
+                    self.add_to_history("SWITCHED TO UNIVERSAL AI", "System")
+                else:
+                    self.universal_ai_mode_button.config(text="Universal Off", bg='#374151')
+                    self.universal_ai_status_label.config(text="Universal AI Disabled", fg='#F59E0B')
+                    self.add_to_history("SWITCHED TO LEGACY DECISION-MAKING", "System")
+                    
+                # Show current status
+                status_summary = self.agent.universal_ai_bridge.create_status_summary()
+                self.add_to_history(f"   Status: {status_summary}", "System")
+            else:
+                self.add_to_history("ERROR: Failed to toggle Universal AI mode", "System")
+                
+        except Exception as e:
+            self.add_to_history(f"ERROR: Universal AI toggle error: {str(e)}", "System")
+
+    def initialize_neural_agent(self):
+        """Initialize the neural agent"""
+        try:
+            self.neural_status_label.config(text="Initializing...", fg='#F59E0B')
+            self.add_to_history("INITIALIZING NEURAL AGENT...", "System")
+            
+            # Check TensorFlow availability first
+            try:
+                import tensorflow as tf
+                self.add_to_history(f"TensorFlow version: {tf.__version__}", "System")
+            except ImportError as tf_error:
+                self.add_to_history(f"TensorFlow not available: {str(tf_error)}", "System")
+                raise ImportError("TensorFlow is required for Neural Agent")
+            
+            # Import and initialize neural agent
+            try:
+                from neural_game_agent import NeuralGameAgent
+                self.add_to_history("Full neural agent module imported successfully", "System")
+                
+                # Initialize with error handling for each step
+                # Initialize with explicit input shape to match ML detector
+                try:
+                    self.agent.neural_agent = NeuralGameAgent(input_shape=(128, 128, 3))
+                    self.add_to_history("Neural agent instance created successfully", "System")
+                    
+                    # Try to build the model to catch shape errors early
+                    self.agent.neural_agent.build_vision_network()
+                    self.add_to_history("Vision network built successfully", "System")
+                    
+                    self.agent.use_neural_agent = True  # Start with neural agent
+                    
+                    self.neural_status_label.config(text="Full Neural Agent Ready", fg='#10B981')
+                    self.neural_mode_button.config(text="Neural Agent ON", bg='#10B981')
+                    self.add_to_history("FULL NEURAL AGENT INITIALIZED", "System")
+                    
+                except Exception as build_error:
+                    self.add_to_history(f"Neural agent build error: {str(build_error)}", "System")
+                    raise build_error
+                
+            except ImportError as import_error:
+                self.add_to_history(f"Full neural agent import error: {str(import_error)}", "System")
+                self.add_to_history("Trying simple neural agent fallback...", "System")
+                
+                # Try simple neural agent as fallback
+                try:
+                    from simple_neural_agent import SimpleNeuralAgent
+                    self.agent.neural_agent = SimpleNeuralAgent()
+                    self.agent.use_neural_agent = True  # Use simple neural agent as fallback
+                    
+                    self.neural_status_label.config(text="Simple Neural Agent Ready", fg='#10B981')
+                    self.neural_mode_button.config(text="Simple Agent", bg='#374151')
+                    self.add_to_history("SIMPLE NEURAL AGENT INITIALIZED (TensorFlow-free)", "System")
+                    
+                except Exception as fallback_error:
+                    self.add_to_history(f"Fallback agent error: {str(fallback_error)}", "System")
+                    raise
+                
+            except Exception as init_error:
+                self.add_to_history(f"Full neural agent initialization error: {str(init_error)}", "System")
+                self.add_to_history("Trying simple neural agent fallback...", "System")
+                
+                # Try simple neural agent as fallback
+                try:
+                    from simple_neural_agent import SimpleNeuralAgent
+                    self.agent.neural_agent = SimpleNeuralAgent()
+                    self.agent.use_neural_agent = True  # Use simple neural agent as fallback
+                    
+                    self.neural_status_label.config(text="Simple Neural Agent Ready", fg='#F59E0B')
+                    self.neural_mode_button.config(text="Simple Agent", bg='#374151')
+                    self.add_to_history("SIMPLE NEURAL AGENT INITIALIZED (Fallback)", "System")
+                    
+                except Exception as fallback_error:
+                    self.add_to_history(f"Fallback agent error: {str(fallback_error)}", "System")
+                    raise fallback_error
+            
+        except Exception as e:
+            self.neural_status_label.config(text="Init Failed", fg='#EF4444')
+            self.add_to_history(f"NEURAL INIT ERROR: {str(e)}", "System")
+            
+            # Show detailed error popup
+            import traceback
+            error_window = tk.Toplevel(self.root)
+            error_window.title("Neural Agent Error")
+            error_window.geometry("600x400")
+            error_window.configure(bg='#1F2937')
+            
+            error_text = tk.Text(error_window, bg='#1F2937', fg='#EF4444', 
+                               font=('Consolas', 10), wrap=tk.WORD)
+            error_text.pack(fill='both', expand=True, padx=10, pady=10)
+            
+            error_details = f"Neural Agent Initialization Failed\n"
+            error_details += "=" * 50 + "\n\n"
+            error_details += f"Error: {str(e)}\n\n"
+            error_details += "Full traceback:\n"
+            error_details += traceback.format_exc()
+            error_details += "\n\nTroubleshooting:\n"
+            error_details += "1. Ensure TensorFlow is installed: pip install tensorflow\n"
+            error_details += "2. Check Python version compatibility (3.8-3.12)\n"
+            error_details += "3. Verify all dependencies are available\n"
+            
+            error_text.insert('1.0', error_details)
+            error_text.config(state=tk.DISABLED)
+    
+    def update_ml_display(self):
+        """Update ML confidence display with live predictions"""
+        try:
+            if not self.agent.use_ml_detection or not self.agent.ml_model_loaded:
+                # Show that ML is not active
+                self.ml_prediction_label.config(text="ML Disabled", fg='#6B7280')
+                self.ml_confidence_label.config(text="N/A", fg='#6B7280')
+                
+                self.ml_predictions_text.config(state=tk.NORMAL)
+                self.ml_predictions_text.delete('1.0', tk.END)
+                self.ml_predictions_text.insert('1.0', "ML Detection is not active.\nEnable it to see live predictions.")
+                self.ml_predictions_text.config(state=tk.DISABLED)
+                return
+            
+            # Get current frame and make prediction
+            if self.agent.current_frame is not None:
+                # Get detailed prediction result
+                result = self.agent.ml_detector.predict_state(self.agent.current_frame)
+                
+                # Update main prediction label
+                confidence_pct = int(result.confidence * 100)
+                
+                # Color code confidence
+                if result.confidence >= 0.8:
+                    conf_color = '#10B981'  # Green - high confidence
+                elif result.confidence >= 0.6:
+                    conf_color = '#F59E0B'  # Yellow - medium confidence  
+                else:
+                    conf_color = '#EF4444'  # Red - low confidence
+                
+                self.ml_prediction_label.config(text=result.predicted_state, fg='#10B981')
+                self.ml_confidence_label.config(text=f"{confidence_pct}%", fg=conf_color)
+                
+                # Update detailed predictions text
+                self.ml_predictions_text.config(state=tk.NORMAL)
+                self.ml_predictions_text.delete('1.0', tk.END)
+                
+                # Sort predictions by confidence
+                sorted_preds = sorted(result.all_predictions.items(), 
+                                    key=lambda x: x[1], reverse=True)
+                
+                predictions_text = "All State Predictions:\n"
+                predictions_text += "-" * 30 + "\n"
+                
+                for state, confidence in sorted_preds:
+                    conf_pct = int(confidence * 100)
+                    bar_length = int(confidence * 20)  # 20 char bar
+                    bar = "#" * bar_length + "-" * (20 - bar_length)
+                    predictions_text += f"{state:12} {conf_pct:3}% {bar}\n"
+                
+                self.ml_predictions_text.insert('1.0', predictions_text)
+                self.ml_predictions_text.config(state=tk.DISABLED)
+            else:
+                # No frame available
+                self.ml_prediction_label.config(text="No Frame", fg='#6B7280')
+                self.ml_confidence_label.config(text="N/A", fg='#6B7280')
+                
+                self.ml_predictions_text.config(state=tk.NORMAL)
+                self.ml_predictions_text.delete('1.0', tk.END)
+                self.ml_predictions_text.insert('1.0', "Waiting for game frame...")
+                self.ml_predictions_text.config(state=tk.DISABLED)
+                
+        except Exception as e:
+            # Error in ML display
+            self.ml_prediction_label.config(text="Error", fg='#EF4444')
+            self.ml_confidence_label.config(text="N/A", fg='#EF4444')
+            
+            self.ml_predictions_text.config(state=tk.NORMAL)
+            self.ml_predictions_text.delete('1.0', tk.END)
+            self.ml_predictions_text.insert('1.0', f"ML Display Error:\n{str(e)}")
+            self.ml_predictions_text.config(state=tk.DISABLED)
+    
+    def update_parallel_performance_display(self):
+        """Update parallel AI performance display"""
+        try:
+            if hasattr(self, 'parallel_manager') and self.parallel_manager is not None:
+                report = self.parallel_manager.get_performance_report()
+                stats = report['parallel_stats']
+                
+                if stats['total_decisions'] > 0:
+                    # Create performance summary
+                    avg_time = stats['average_time'] * 1000  # Convert to ms
+                    parallel_pct = (stats['parallel_decisions'] / stats['total_decisions']) * 100
+                    speedup = report.get('average_speedup', 1.0)
+                    
+                    if speedup > 1.5:
+                        speedup_text = f" ({speedup:.1f}x faster)"
+                        color = '#10B981'  # Green for good performance
+                    elif speedup > 1.0:
+                        speedup_text = f" ({speedup:.1f}x faster)"
+                        color = '#F59E0B'  # Orange for modest improvement
+                    else:
+                        speedup_text = " (no speedup)"
+                        color = '#EF4444'  # Red for poor performance
+                    
+                    display_text = f"Parallel: {avg_time:.1f}ms avg, {parallel_pct:.0f}% parallel{speedup_text}"
+                    
+                    self.parallel_performance_label.config(text=display_text, fg=color)
+                else:
+                    self.parallel_performance_label.config(text="Parallel AI: No decisions yet", fg='#6B7280')
+            else:
+                self.parallel_performance_label.config(text="Parallel AI: Not initialized", fg='#6B7280')
+                
+        except Exception as e:
+            self.parallel_performance_label.config(text=f"Parallel AI: Error - {str(e)}", fg='#EF4444')
+    
+    def update_autonomous_training_display(self):
+        """Update autonomous training status display"""
+        try:
+            if hasattr(self.agent.ml_detector, 'auto_samples_collected'):
+                # Update auto-collection counter
+                collected = self.agent.ml_detector.auto_samples_collected
+                max_samples = self.agent.ml_detector.max_auto_samples_per_session
+                self.auto_samples_label.config(text=f"{collected}/{max_samples}")
+                
+                # Update pending review counter
+                pending = self.agent.ml_detector.get_pending_review_count()
+                self.pending_review_label.config(text=str(pending))
+                
+                # Color coding based on status
+                if collected >= max_samples:
+                    self.auto_samples_label.config(fg='#F59E0B')  # Orange when full
+                elif collected > 0:
+                    self.auto_samples_label.config(fg='#10B981')  # Green when collecting
+                else:
+                    self.auto_samples_label.config(fg='#6B7280')  # Gray when inactive
+                    
+                if pending > 15:
+                    self.pending_review_label.config(fg='#EF4444')  # Red when many pending
+                elif pending > 5:
+                    self.pending_review_label.config(fg='#F59E0B')  # Orange when some pending
+                else:
+                    self.pending_review_label.config(fg='#10B981')  # Green when few pending
+                    
+        except Exception as e:
+            # Silent fail for display updates
+            pass
+    
+    def update_emulator_status_display(self):
+        """Update emulator safety status display"""
+        try:
+            if hasattr(self, 'emulator_status_label'):
+                status = get_emulator_input_status()
+                
+                if status['window_found']:
+                    if status['is_safe']:
+                        self.emulator_status_label.config(text="✅ Safe to control", fg='#10B981')
+                    else:
+                        reason = status['safety_reason'][:20] + "..." if len(status['safety_reason']) > 20 else status['safety_reason']
+                        self.emulator_status_label.config(text=f"⚠️ {reason}", fg='#F59E0B')
+                else:
+                    self.emulator_status_label.config(text="❌ Emulator not found", fg='#EF4444')
+        except Exception as e:
+            pass  # Silent fail for display updates
+    
+    def toggle_safe_input(self):
+        """Toggle safe input system"""
+        self.agent.use_safe_input = not self.agent.use_safe_input
+        
+        if self.agent.use_safe_input:
+            self.safe_input_button.config(text="Safe Input ON", bg='#10B981')
+            self.add_to_history("SAFE INPUT ENABLED - Input only goes to emulator", "System")
+        else:
+            self.safe_input_button.config(text="Safe Input OFF", bg='#6B7280')
+            self.add_to_history("SAFE INPUT DISABLED - Using controller system", "System")
+    
+    def toggle_clean_screenshots(self):
+        """Toggle clean screenshot capture"""
+        self.agent.use_clean_screenshots = not self.agent.use_clean_screenshots
+        
+        if self.agent.use_clean_screenshots:
+            self.clean_shots_button.config(text="Clean Shots ON", bg='#10B981')
+            self.add_to_history("CLEAN SCREENSHOTS ENABLED - ML uses overlay-free images", "System")
+        else:
+            self.clean_shots_button.config(text="Clean Shots OFF", bg='#6B7280') 
+            self.add_to_history("CLEAN SHOTS DISABLED - Using full window capture", "System")
+    
+    def test_clean_capture(self):
+        """Test the clean capture system and save comparison images"""
+        try:
+            if not hasattr(self, 'emulator_window') or self.emulator_window is None:
+                self.emulator_window = find_emulator_window()
+            
+            # Capture with overlay (normal)
+            normal_capture = capture_window(self.emulator_window)
+            
+            # Capture without overlay (clean)
+            clean_capture = capture_emulator_without_overlay(self.emulator_window, debug=True)
+            
+            # Save both images with timestamp
+            import time
+            timestamp = int(time.time())
+            
+            import cv2
+            cv2.imwrite(f"test_normal_{timestamp}.png", normal_capture)
+            cv2.imwrite(f"test_clean_{timestamp}.png", clean_capture)
+            
+            self.add_to_history(f"CAPTURE TEST SAVED: test_normal_{timestamp}.png vs test_clean_{timestamp}.png", "System")
+            self.add_to_history(f"Normal: {normal_capture.shape}, Clean: {clean_capture.shape}", "System")
+            
+            # Also show a preview in a popup window
+            self.show_capture_comparison(normal_capture, clean_capture)
+            
+        except Exception as e:
+            self.add_to_history(f"CAPTURE TEST ERROR: {str(e)}", "System")
+    
+    def show_capture_comparison(self, normal_frame, clean_frame):
+        """Show a comparison window of normal vs clean capture"""
+        try:
+            import tkinter as tk
+            from PIL import Image, ImageTk
+            import cv2
+            
+            # Create comparison window
+            compare_window = tk.Toplevel(self.root)
+            compare_window.title("Capture Comparison: Normal vs Clean")
+            compare_window.geometry("800x400")
+            compare_window.configure(bg='#1F2937')
+            
+            # Create frames for side-by-side comparison
+            left_frame = tk.Frame(compare_window, bg='#1F2937')
+            left_frame.pack(side='left', fill='both', expand=True, padx=10, pady=10)
+            
+            right_frame = tk.Frame(compare_window, bg='#1F2937')
+            right_frame.pack(side='right', fill='both', expand=True, padx=10, pady=10)
+            
+            # Labels
+            tk.Label(left_frame, text="Normal Capture (with overlay)", bg='#1F2937', fg='white', 
+                    font=('Arial', 12, 'bold')).pack(pady=5)
+            tk.Label(right_frame, text="Clean Capture (overlay-free)", bg='#1F2937', fg='white', 
+                    font=('Arial', 12, 'bold')).pack(pady=5)
+            
+            # Resize images for display
+            display_height = 300
+            
+            # Normal image
+            h, w = normal_frame.shape[:2]
+            display_width = int(w * display_height / h)
+            normal_resized = cv2.resize(normal_frame, (display_width, display_height))
+            normal_rgb = cv2.cvtColor(normal_resized, cv2.COLOR_BGR2RGB)
+            normal_pil = Image.fromarray(normal_rgb)
+            normal_photo = ImageTk.PhotoImage(normal_pil)
+            
+            normal_label = tk.Label(left_frame, image=normal_photo, bg='#374151')
+            normal_label.image = normal_photo
+            normal_label.pack(pady=5)
+            
+            # Clean image
+            h, w = clean_frame.shape[:2]
+            display_width = int(w * display_height / h)
+            clean_resized = cv2.resize(clean_frame, (display_width, display_height))
+            clean_rgb = cv2.cvtColor(clean_resized, cv2.COLOR_BGR2RGB)
+            clean_pil = Image.fromarray(clean_rgb)
+            clean_photo = ImageTk.PhotoImage(clean_pil)
+            
+            clean_label = tk.Label(right_frame, image=clean_photo, bg='#374151')
+            clean_label.image = clean_photo
+            clean_label.pack(pady=5)
+            
+            # Info labels
+            tk.Label(left_frame, text=f"Size: {normal_frame.shape[:2]}", 
+                    bg='#1F2937', fg='#9CA3AF', font=('Arial', 10)).pack()
+            tk.Label(right_frame, text=f"Size: {clean_frame.shape[:2]}", 
+                    bg='#1F2937', fg='#9CA3AF', font=('Arial', 10)).pack()
+                    
+        except Exception as e:
+            self.add_to_history(f"COMPARISON DISPLAY ERROR: {str(e)}", "System")
+    
+    def review_pending_samples(self):
+        """Open review window for pending uncertain samples"""
+        try:
+            pending_count = self.agent.ml_detector.get_pending_review_count()
+            if pending_count == 0:
+                self.add_to_history("NO SAMPLES TO REVIEW", "System")
+                return
+            
+            # Create review window - larger to accommodate button grid
+            self.review_window = tk.Toplevel(self.root)
+            self.review_window.title(f"Review Uncertain Samples ({pending_count} pending)")
+            self.review_window.geometry("900x800")  # Increased from 800x600
+            self.review_window.configure(bg='#1F2937')
+            
+            # Center the window on screen
+            self.review_window.update_idletasks()
+            width = self.review_window.winfo_width()
+            height = self.review_window.winfo_height()
+            x = (self.review_window.winfo_screenwidth() // 2) - (width // 2)
+            y = (self.review_window.winfo_screenheight() // 2) - (height // 2)
+            self.review_window.geometry(f"{width}x{height}+{x}+{y}")
+            
+            # Make window resizable
+            self.review_window.resizable(True, True)
+            
+            # Header
+            header_frame = tk.Frame(self.review_window, bg='#1F2937')
+            header_frame.pack(fill='x', padx=10, pady=10)
+            
+            tk.Label(header_frame, text="Manual Sample Review", 
+                    bg='#1F2937', fg='white', font=('Arial', 16, 'bold')).pack()
+            
+            self.review_info_label = tk.Label(header_frame, text=f"Sample 1 of {pending_count}", 
+                                            bg='#1F2937', fg='#10B981', font=('Arial', 12))
+            self.review_info_label.pack(pady=5)
+            
+            # Image display area
+            self.review_image_frame = tk.Frame(self.review_window, bg='#374151', width=400, height=300)
+            self.review_image_frame.pack(padx=10, pady=10)
+            self.review_image_frame.pack_propagate(False)
+            
+            self.review_image_label = tk.Label(self.review_image_frame, text="Loading sample...", 
+                                             bg='#374151', fg='white')
+            self.review_image_label.pack(expand=True)
+            
+            # AI prediction display
+            pred_frame = tk.Frame(self.review_window, bg='#1F2937')
+            pred_frame.pack(fill='x', padx=10, pady=5)
+            
+            tk.Label(pred_frame, text="AI Prediction:", bg='#1F2937', fg='white', 
+                    font=('Arial', 10, 'bold')).pack(side='left')
+            
+            self.ai_pred_label = tk.Label(pred_frame, text="Unknown", bg='#1F2937', fg='#F59E0B', 
+                                        font=('Arial', 10, 'bold'))
+            self.ai_pred_label.pack(side='left', padx=(10, 0))
+            
+            tk.Label(pred_frame, text="Confidence:", bg='#1F2937', fg='white', 
+                    font=('Arial', 10, 'bold')).pack(side='left', padx=(20, 0))
+            
+            self.ai_conf_label = tk.Label(pred_frame, text="0%", bg='#1F2937', fg='#9CA3AF', 
+                                        font=('Arial', 10, 'bold'))
+            self.ai_conf_label.pack(side='left', padx=(10, 0))
+            
+            # Manual label selection with buttons
+            label_frame = tk.Frame(self.review_window, bg='#1F2937')
+            label_frame.pack(fill='x', padx=10, pady=10)
+            
+            tk.Label(label_frame, text="Correct Label:", bg='#1F2937', fg='white', 
+                    font=('Arial', 12, 'bold')).pack()
+            
+            # Create button grid for fast selection
+            self.review_label_var = tk.StringVar()
+            button_grid = tk.Frame(label_frame, bg='#1F2937')
+            button_grid.pack(pady=10)
+            
+            # Create state selection buttons in a grid
+            self.label_buttons = {}
+            states = self.agent.ml_detector.class_names
+            
+            # Arrange buttons in rows of 3
+            for i, state in enumerate(states):
+                row = i // 3
+                col = i % 3
+                
+                # Color code buttons based on state type
+                if 'Battle' in state:
+                    bg_color = '#DC2626'  # Red for battles
+                elif state in ['Overworld', 'Water/Flying']:
+                    bg_color = '#059669'  # Green for exploration
+                elif state in ['Pokemon Center', 'Shop']:
+                    bg_color = '#2563EB'  # Blue for facilities
+                elif state in ['Dialogue/Menu']:
+                    bg_color = '#7C3AED'  # Purple for menus
+                else:
+                    bg_color = '#6B7280'  # Gray for others
+                
+                btn = tk.Button(button_grid, text=state, 
+                              command=lambda s=state: self.select_and_save_review_sample(s),
+                              bg=bg_color, fg='white', width=15, height=2,
+                              font=('Arial', 9, 'bold'))
+                btn.grid(row=row, column=col, padx=2, pady=2, sticky='ew')
+                self.label_buttons[state] = btn
+            
+            # Make columns expand evenly
+            for col in range(3):
+                button_grid.columnconfigure(col, weight=1)
+            
+            # Selected label display
+            selected_frame = tk.Frame(label_frame, bg='#1F2937')
+            selected_frame.pack(pady=10)
+            
+            tk.Label(selected_frame, text="Selected:", bg='#1F2937', fg='white', 
+                    font=('Arial', 10, 'bold')).pack(side='left')
+            
+            self.selected_label_display = tk.Label(selected_frame, text="None", bg='#1F2937', 
+                                                  fg='#F59E0B', font=('Arial', 10, 'bold'))
+            self.selected_label_display.pack(side='left', padx=(10, 0))
+            
+            # Action buttons (simplified - main selection is via state buttons above)
+            button_frame = tk.Frame(self.review_window, bg='#1F2937')
+            button_frame.pack(fill='x', padx=10, pady=10)
+            
+            tk.Label(button_frame, text="Click a state button above to save and advance", 
+                    bg='#1F2937', fg='#10B981', font=('Arial', 10, 'italic')).pack(side='left')
+            
+            tk.Button(button_frame, text="Skip", command=self.skip_sample,
+                     bg='#6B7280', fg='white', width=8).pack(side='left', padx=20)
+            
+            tk.Button(button_frame, text="Discard", command=self.discard_sample,
+                     bg='#EF4444', fg='white', width=8).pack(side='left', padx=5)
+            
+            tk.Button(button_frame, text="Close", command=self.close_review_window,
+                     bg='#374151', fg='white', width=8).pack(side='right', padx=5)
+            
+            # Progress info
+            progress_frame = tk.Frame(self.review_window, bg='#1F2937')
+            progress_frame.pack(fill='x', padx=10, pady=5)
+            
+            self.review_progress_label = tk.Label(progress_frame, text="", bg='#1F2937', fg='#9CA3AF', 
+                                                font=('Arial', 9))
+            self.review_progress_label.pack()
+            
+            # Initialize with first sample
+            self.current_review_sample = None
+            self.review_sample_index = 0
+            self.load_next_review_sample()
+            
+        except Exception as e:
+            self.add_to_history(f"REVIEW ERROR: {str(e)}", "System")
+    
+    def load_next_review_sample(self):
+        """Load the next sample for review"""
+        try:
+            sample = self.agent.ml_detector.get_next_uncertain_sample()
+            if sample is None:
+                # No more samples
+                self.review_info_label.config(text="No more samples to review!")
+                self.review_image_label.config(text="All samples reviewed")
+                return
+            
+            self.current_review_sample = sample
+            self.review_sample_index += 1
+            remaining = self.agent.ml_detector.get_pending_review_count()
+            
+            # Update info labels
+            self.review_info_label.config(text=f"Sample {self.review_sample_index} ({remaining} remaining)")
+            
+            # Handle manual vs uncertain samples differently
+            if 'result' in sample:
+                # This is an uncertain sample with AI prediction
+                self.ai_pred_label.config(text=sample['result'].predicted_state)
+                self.ai_conf_label.config(text=f"{sample['result'].confidence:.1%}")
+                # Set default selection to AI prediction
+                self.select_review_label(sample['result'].predicted_state)
+            else:
+                # This is a manual sample without AI prediction
+                self.ai_pred_label.config(text="Manual Collection")
+                self.ai_conf_label.config(text="N/A")
+                # Set default selection to first available state
+                class_names = getattr(self.agent.ml_detector, 'class_names', ['Overworld'])
+                if class_names:
+                    self.select_review_label(class_names[0])
+                else:
+                    self.select_review_label("Overworld")
+            
+            # Update header with sample source info
+            source_info = sample.get('source', 'auto')
+            if source_info == 'manual':
+                self.review_info_label.config(text=f"Manual Sample {self.review_sample_index} ({remaining} remaining)")
+            else:
+                self.review_info_label.config(text=f"Uncertain Sample {self.review_sample_index} ({remaining} remaining)")
+            
+            # Display image preview
+            if sample['frame'] is not None:
+                try:
+                    import cv2
+                    from PIL import Image, ImageTk
+                    
+                    # Resize frame for display
+                    display_frame = cv2.resize(sample['frame'], (300, 200))
+                    display_frame_rgb = cv2.cvtColor(display_frame, cv2.COLOR_BGR2RGB)
+                    
+                    # Convert to PIL and display
+                    pil_image = Image.fromarray(display_frame_rgb)
+                    photo = ImageTk.PhotoImage(pil_image)
+                    
+                    self.review_image_label.configure(image=photo, text="")
+                    self.review_image_label.image = photo  # Keep reference
+                    
+                except Exception as img_error:
+                    self.review_image_label.config(text=f"Image display error: {str(img_error)}")
+            else:
+                self.review_image_label.config(text="No image available")
+            
+            # Update progress
+            total_processed = self.review_sample_index
+            self.review_progress_label.config(text=f"Processed: {total_processed} | Remaining: {remaining}")
+            
+        except Exception as e:
+            self.add_to_history(f"LOAD SAMPLE ERROR: {str(e)}", "System")
+    
+    def save_and_next_sample(self):
+        """Save the current sample with manual label and load next"""
+        try:
+            if self.current_review_sample is None:
+                self.add_to_history("ERROR: No sample to save", "System")
+                return
+            
+            manual_label = self.review_label_var.get()
+            if not manual_label:
+                self.add_to_history("ERROR: No label selected", "System")
+                return
+            
+            # Get stats before saving
+            stats_before = self.agent.ml_detector.get_data_collection_stats()
+            before_count = stats_before.get(manual_label, 0)
+            
+            # Save the sample with manual label  
+            success = self.agent.ml_detector.collect_training_data(
+                self.current_review_sample['frame'],
+                manual_label,
+                auto_save=True,
+                manual_collection=False  # Don't queue for review again
+            )
+            
+            if success:
+                # Get stats after saving to verify
+                stats_after = self.agent.ml_detector.get_data_collection_stats()
+                after_count = stats_after.get(manual_label, 0)
+                
+                # Verify the sample was actually saved
+                if after_count > before_count:
+                    self.add_to_history(f"REVIEW SAVED: '{manual_label}' ({before_count}->{after_count} samples)", "System")
+                    
+                    # Additional verification: check if file was created
+                    safe_name = self.agent.ml_detector.safe_class_names.get(manual_label, manual_label)
+                    data_path = self.agent.ml_detector.data_path
+                    import os
+                    class_dir = os.path.join(data_path, safe_name)
+                    if os.path.exists(class_dir):
+                        file_count = len([f for f in os.listdir(class_dir) if f.endswith('.npy')])
+                        self.add_to_history(f"  -> Verified: {file_count} files in {safe_name}/ directory", "System")
+                    
+                    # Show source info
+                    source = self.current_review_sample.get('source', 'auto')
+                    if 'result' in self.current_review_sample:
+                        ai_pred = self.current_review_sample['result'].predicted_state
+                        confidence = self.current_review_sample['result'].confidence
+                        
+                        if ai_pred != manual_label:
+                            self.add_to_history(f"  -> Correction: AI said '{ai_pred}' ({confidence:.1%}) -> Human: '{manual_label}'", "System")
+                        else:
+                            self.add_to_history(f"  -> Confirmation: AI was correct ({confidence:.1%})", "System")
+                    else:
+                        self.add_to_history(f"  -> Manual collection labeled as '{manual_label}'", "System")
+                        
+                else:
+                    self.add_to_history(f"WARNING: Sample count didn't increase - save may have failed", "System")
+            else:
+                self.add_to_history(f"ERROR: Failed to save '{manual_label}' sample", "System")
+            
+            # Load next sample
+            self.load_next_review_sample()
+            
+        except Exception as e:
+            self.add_to_history(f"SAVE SAMPLE ERROR: {str(e)}", "System")
+            import traceback
+            self.add_to_history(f"Stack trace: {traceback.format_exc()}", "System")
+    
+    def save_and_next_sample_with_label(self, manual_label):
+        """Save sample with specified label and advance to next"""
+        try:
+            if self.current_review_sample is None:
+                self.add_to_history("ERROR: No sample to save", "System")
+                return
+            
+            # Get stats before saving
+            stats_before = self.agent.ml_detector.get_data_collection_stats()
+            before_count = stats_before.get(manual_label, 0)
+            
+            # Save the sample with manual label  
+            success = self.agent.ml_detector.collect_training_data(
+                self.current_review_sample['frame'],
+                manual_label,
+                auto_save=True,
+                manual_collection=False  # Don't queue for review again
+            )
+            
+            if success:
+                # Get stats after saving to verify
+                stats_after = self.agent.ml_detector.get_data_collection_stats()
+                after_count = stats_after.get(manual_label, 0)
+                
+                # Verify the sample was actually saved
+                if after_count > before_count:
+                    self.add_to_history(f"REVIEW SAVED: '{manual_label}' ({before_count}->{after_count} samples)", "System")
+                    
+                    # Show source info
+                    source = self.current_review_sample.get('source', 'auto')
+                    if 'result' in self.current_review_sample:
+                        ai_pred = self.current_review_sample['result'].predicted_state
+                        confidence = self.current_review_sample['result'].confidence
+                        
+                        if ai_pred != manual_label:
+                            self.add_to_history(f"  Correction: AI said '{ai_pred}' ({confidence:.1%}) -> Human: '{manual_label}'", "System")
+                        else:
+                            self.add_to_history(f"  Confirmation: AI was correct ({confidence:.1%})", "System")
+                    else:
+                        self.add_to_history(f"  Manual collection labeled as '{manual_label}'", "System")
+                        
+                else:
+                    self.add_to_history(f"WARNING: Sample count didn't increase - save may have failed", "System")
+            else:
+                self.add_to_history(f"ERROR: Failed to save '{manual_label}' sample", "System")
+            
+            # Load next sample
+            self.load_next_review_sample()
+            
+        except Exception as e:
+            self.add_to_history(f"SAVE SAMPLE ERROR: {str(e)}", "System")
+            import traceback
+            self.add_to_history(f"Stack trace: {traceback.format_exc()}", "System")
+    
+    def skip_sample(self):
+        """Skip current sample without saving"""
+        self.load_next_review_sample()
+    
+    def discard_sample(self):
+        """Discard current sample and load next"""
+        self.add_to_history("SAMPLE DISCARDED", "System")
+        self.load_next_review_sample()
+    
+    def select_review_label(self, label):
+        """Handle label button selection (visual feedback only)"""
+        try:
+            self.review_label_var.set(label)
+            self.selected_label_display.config(text=label)
+            
+            # Update button appearance to show selection
+            for state, btn in self.label_buttons.items():
+                if state == label:
+                    # Highlight selected button
+                    btn.config(relief='solid', borderwidth=3)
+                else:
+                    # Reset other buttons
+                    btn.config(relief='raised', borderwidth=1)
+                    
+        except Exception as e:
+            self.add_to_history(f"LABEL SELECT ERROR: {str(e)}", "System")
+    
+    def select_and_save_review_sample(self, label):
+        """Handle button click: select label, save sample, and auto-advance"""
+        try:
+            # First set the visual selection
+            self.select_review_label(label)
+            
+            # Then save and advance automatically  
+            self.save_and_next_sample_with_label(label)
+            
+        except Exception as e:
+            self.add_to_history(f"AUTO-SAVE ERROR: {str(e)}", "System")
+            import traceback
+            self.add_to_history(f"Stack trace: {traceback.format_exc()}", "System")
+    
+    def close_review_window(self):
+        """Close the review window"""
+        if hasattr(self, 'review_window'):
+            self.review_window.destroy()
+    
+    def classify_transition(self, from_state: str, to_state: str) -> str:
+        """Classify the type of state transition"""
+        if not from_state or not to_state:
+            return None
+            
+        # Battle transitions
+        if from_state == "Overworld" and to_state in ["Wild Battle", "Trainer Battle", "Battle"]:
+            return "ENTERED_BATTLE"
+        elif from_state in ["Wild Battle", "Trainer Battle", "Battle"] and to_state == "Overworld":
+            return "EXITED_BATTLE"
+            
+        # Indoor/Outdoor transitions
+        elif from_state == "Overworld" and to_state == "Indoor/Cave":
+            return "ENTERED_BUILDING"
+        elif from_state == "Indoor/Cave" and to_state == "Overworld":
+            return "EXITED_BUILDING"
+            
+        # Special location transitions
+        elif from_state == "Overworld" and to_state in ["Pokemon Center", "Shop", "Gym"]:
+            return f"ENTERED_{to_state.upper().replace(' ', '_')}"
+        elif from_state in ["Pokemon Center", "Shop", "Gym"] and to_state == "Overworld":
+            return f"EXITED_{from_state.upper().replace(' ', '_')}"
+            
+        # Menu/Dialogue transitions
+        elif to_state == "Dialogue/Menu":
+            return "OPENED_MENU"
+        elif from_state == "Dialogue/Menu":
+            return "CLOSED_MENU"
+            
+        return None  # No significant transition
+    
+    def detect_frame_transition_effects(self, current_frame) -> bool:
+        """Detect battle transition effects by comparing consecutive frames"""
+        if current_frame is None:
+            return False
+            
+        # Initialize if first frame
+        if self.agent.last_frame_for_transition is None:
+            self.agent.last_frame_for_transition = current_frame.copy()
+            return False
+        
+        try:
+            # Convert both frames to grayscale for comparison
+            current_gray = cv2.cvtColor(current_frame, cv2.COLOR_BGR2GRAY)
+            last_gray = cv2.cvtColor(self.agent.last_frame_for_transition, cv2.COLOR_BGR2GRAY)
+            
+            # Ensure both frames have the same size
+            if current_gray.shape != last_gray.shape:
+                # Resize last frame to match current frame
+                last_gray = cv2.resize(last_gray, (current_gray.shape[1], current_gray.shape[0]))
+            
+            # Calculate frame difference
+            frame_diff = cv2.absdiff(current_gray, last_gray)
+            
+            # Calculate percentage of changed pixels
+            change_threshold = 30  # Pixels that changed by more than this amount
+            changed_pixels = np.sum(frame_diff > change_threshold)
+            total_pixels = frame_diff.shape[0] * frame_diff.shape[1]
+            change_percentage = changed_pixels / total_pixels
+            
+            # Detect sudden large changes (battle transition effects)
+            if change_percentage > 0.4:  # More than 40% of screen changed
+                print(f"Transition effect detected: {change_percentage:.2%} screen change")
+                self.agent.transition_cooldown = time.time()
+                self.agent.last_frame_for_transition = current_frame.copy()
+                return True
+            
+            # Update last frame for next comparison
+            self.agent.last_frame_for_transition = current_frame.copy()
+            return False
+            
+        except Exception as e:
+            print(f"Error in transition detection: {e}")
+            self.agent.last_frame_for_transition = current_frame.copy()
+            return False
+    
+    def check_existing_map_data(self):
+        """Check and display existing map data on startup"""
+        if self.agent.memory_initialized:
+            stats = self.agent.memory.get_memory_stats()
+            if stats['areas_discovered'] > 0:
+                summary = f"Loaded existing map: {stats['areas_discovered']} areas, {stats['tiles_visited']} tiles"
+                print(summary)
+                self.add_to_history(f"LOADED MAP DATA", "System")
+                self.add_to_history(f"{stats['areas_discovered']} areas discovered", "System")
+            else:
+                print("Starting with fresh map data")
+                self.add_to_history("FRESH MAP DATA", "System")
+    
+    def on_controller_change(self, event):
+        """Handle controller selection change"""
+        selected_controller = self.controller_var.get()
+        if self.controller_manager.select_controller(selected_controller):
+            self.update_controller_info()
+            self.add_to_history(f"CONTROLLER: {selected_controller}", "User")
+    
+    def update_controller_info(self):
+        """Update the controller info display"""
+        info = self.controller_manager.get_controller_info()
+        info_text = f"Emulator: {info['emulator']} | Buttons: {len(info['buttons'])}"
+        self.controller_info_label.config(text=info_text)
+        
+    def ai_press(self, key, action_type="AI"):
+        # Use safe input system if enabled
+        if self.agent.use_safe_input:
+            success = safe_emulator_key_press(key.lower())
+            if success:
+                self.update_queue.put(('ai_action', (key, f"{action_type} (Safe)")))
+            else:
+                # Get detailed status for debugging
+                status = get_emulator_input_status()
+                print(f"Safe input blocked {key} ({action_type}): {status['safety_reason']}")
+        else:
+            # Fall back to old controller method
+            success = self.controller_manager.press(key)
+            if success:
+                self.update_queue.put(('ai_action', (key, action_type)))
+            else:
+                print(f"Failed to press {key} with {action_type}")
+        # Don't add to history here - handle_ai_action will do it
+        
+    def start_agent(self):
+        if self.agent.paused or not hasattr(self, 'agent_thread') or not self.agent_thread.is_alive():
+            try:
+                # Find emulator window using current controller's window title
+                emulator_title = self.controller_manager.get_emulator_window_title()
+                self.emulator_window = find_emulator_window(emulator_title)
+                
+                self.agent.paused = False
+                self.status_label.config(text="Status: Starting... (2s delay)", fg='#F59E0B')
+                
+                # Add 2-second delay before starting agent actions
+                def delayed_start():
+                    time.sleep(2)
+                    self.status_label.config(text="Status: Running", fg='#10B981')
+                    self.add_to_history("AGENT STARTED", "System")
+                
+                if not hasattr(self, 'agent_thread') or not self.agent_thread.is_alive():
+                    self.agent_thread = threading.Thread(target=self.agent_loop_with_delay, daemon=True)
+                    self.agent_thread.start()
+                    
+            except RuntimeError as e:
+                self.status_label.config(text=f"Error: {e}", fg='#EF4444')
+                
+    def shutdown_agent(self):
+        """Properly shutdown agent with full memory save and close application"""
+        self.agent.paused = True
+        self.status_label.config(text="Status: Shutting down...", fg='#F59E0B')
+        
+        # Force save memory with detailed info
+        if self.agent.memory_initialized:
+            print("Saving memory data...")
+            self.agent.memory.save_memory()
+            stats = self.agent.memory.get_memory_stats()
+            print(f"Memory saved: {stats['areas_discovered']} areas, {stats['tiles_visited']} tiles")
+            self.add_to_history(f"SAVED: {stats['areas_discovered']} areas", "System")
+        
+        # Update status and close
+        self.status_label.config(text="Status: Shutdown", fg='#EF4444')
+        self.add_to_history("AGENT SHUTDOWN", "System")
+        
+        # Close the application after a brief delay
+        self.root.after(1000, self.root.quit)  # 1 second delay then close
+        
+    def toggle_pause(self):
+        if hasattr(self, 'agent_thread') and self.agent_thread.is_alive():
+            self.agent.paused = not self.agent.paused
+            status = "Paused" if self.agent.paused else "Running"
+            color = "#F59E0B" if self.agent.paused else "#10B981"
+            self.status_label.config(text=f"Status: {status}", fg=color)
+            
+            # Update button states
+            if self.agent.paused:
+                self.pause_button.config(text="RESUME")
+                self.start_button.config(state='normal')
+            else:
+                self.pause_button.config(text="PAUSE")
+                self.start_button.config(state='disabled')
+            
+            self.add_to_history(f"AGENT {status.upper()}", "Control")
+    
+    def agent_loop_with_delay(self):
+        """Agent loop with startup delay"""
+        # 2-second delay before starting agent actions
+        print("Agent starting in 2 seconds...")
+        time.sleep(2)
+        self.status_label.config(text="Status: Running", fg='#10B981')
+        self.add_to_history("AGENT STARTED", "System")
+        
+        # Now start the normal agent loop
+        self.agent_loop()
+            
+    def agent_loop(self):
+        """Main agent loop"""
+        while True:
+            try:
+                if self.agent.paused:
+                    time.sleep(0.1)
+                    continue
+                    
+                if not self.emulator_window:
+                    time.sleep(0.1)
+                    continue
+                    
+                # Capture and analyze game state
+                # Use clean capture for ML/analysis, full capture for display
+                if self.agent.use_clean_screenshots:
+                    try:
+                        # Try the advanced overlay-free capture method
+                        game_frame_clean = capture_emulator_without_overlay(self.emulator_window, debug=False)
+                        game_frame = capture_window(self.emulator_window)  # Keep for display
+                        ml_frame = game_frame_clean  # Use clean version for ML
+                        
+                        # Debug: Save comparison images occasionally
+                        if hasattr(self, '_debug_counter'):
+                            self._debug_counter += 1
+                        else:
+                            self._debug_counter = 1
+                            
+                        # Save debug images every 100 frames to see the difference
+                        if self._debug_counter % 100 == 0:
+                            try:
+                                import cv2
+                                cv2.imwrite(f"debug_full_{self._debug_counter}.png", game_frame)
+                                cv2.imwrite(f"debug_clean_{self._debug_counter}.png", game_frame_clean)
+                                print(f"Saved debug images {self._debug_counter}: full={game_frame.shape}, clean={game_frame_clean.shape}")
+                            except:
+                                pass
+                                
+                    except Exception as e:
+                        print(f"Clean capture failed, using full window: {e}")
+                        game_frame = capture_window(self.emulator_window)
+                        ml_frame = game_frame
+                else:
+                    game_frame = capture_window(self.emulator_window)
+                    ml_frame = game_frame
+                    
+                if game_frame is None:
+                    time.sleep(0.1)
+                    continue
+                    
+                self.agent.current_frame = game_frame
+                self.agent.current_ml_frame = ml_frame  # Store clean frame for ML operations
+                
+                # Detect transition effects before state detection
+                transition_detected = self.detect_frame_transition_effects(game_frame)
+                
+                # Check for state override first
+                if hasattr(self.agent, 'state_override') and self.agent.state_override:
+                    state = self.agent.state_override
+                    print(f"Using state override: {state}")
+                else:
+                    # Choose detection method based on flag
+                    if self.agent.use_ml_detection and self.agent.ml_model_loaded:
+                        state = self.agent.ml_detector.get_confident_state(ml_frame)
+                    else:
+                        state = detect_game_state(game_frame)  # Traditional detection uses full frame
+                        
+                        # If auto-collection is enabled, also collect data using rule-based labels
+                        if self.agent.ml_detector.auto_collection_enabled:
+                            from ml_state_detector import StateDetectionResult
+                            # Create a mock result for auto-collection using dataclass constructor
+                            mock_result = StateDetectionResult(
+                                predicted_state=state,
+                                confidence=0.9,  # High confidence for rule-based detection
+                                all_predictions={state: 0.9},
+                                timestamp=time.time()
+                            )
+                            self.agent.ml_detector.auto_collect_if_appropriate(ml_frame, mock_result)
+                    
+                    # If we detected transition effects, be more conservative about state changes
+                    if transition_detected and self.agent.last_state:
+                        # During transitions, stick with the previous state briefly
+                        if time.time() - self.agent.transition_cooldown < 2.0:
+                            state = self.agent.last_state
+                            print(f"Transition detected - maintaining state: {state}")
+                
+                screen_analysis = analyze_screen_regions(game_frame)
+                self.agent.current_analysis = screen_analysis
+                
+                # Initialize memory system if not done yet
+                if not self.agent.memory_initialized:
+                    self.agent.memory.initialize_game_memory(game_frame)
+                    self.agent.memory_initialized = True
+                    
+                    # Load and display existing map data summary
+                    self.check_existing_map_data()
+                
+                # Update memory with current position
+                if self.agent.pathfinder:
+                    current_pos = self.agent.pathfinder.get_player_position(game_frame)
+                    if current_pos:
+                        self.agent.memory.update_current_position(game_frame, state, current_pos)
+                
+                # Update goal system (only if not paused)
+                if not getattr(self.agent, 'goal_system_paused', False):
+                    self.agent.goal_system.update_game_state(
+                        stuck_counter=self.agent.stuck_counter,
+                        health_status=self.determine_health_status(screen_analysis)
+                    )
+                    
+                    # Evaluate and create new goals
+                    memory_data = self.agent.memory.memory_data if self.agent.memory_initialized else None
+                    self.agent.goal_system.evaluate_and_create_goals(state, memory_data)
+                    
+                    # Get current goal with error handling
+                    try:
+                        self.agent.current_goal = self.agent.goal_system.get_current_goal()
+                    except Exception as e:
+                        print(f"Error getting current goal: {e}")
+                        self.agent.current_goal = None
+                else:
+                    # Goal system is paused, clear current goal
+                    self.agent.current_goal = None
+                
+                # Update state display
+                if not hasattr(self.agent, 'state_override') or not self.agent.state_override:
+                    self.current_state_label.config(text=f"State: {state}", fg='#9CA3AF')
+                
+                # Periodic memory save while running
+                current_time = time.time()
+                if current_time - self.last_periodic_save > self.periodic_save_interval:
+                    if self.agent.memory_initialized:
+                        self.agent.memory.save_memory()
+                        stats = self.agent.memory.get_memory_stats()
+                        print(f"Periodic save: {stats['areas_discovered']} areas, {stats['tiles_visited']} tiles")
+                    self.last_periodic_save = current_time
+                
+                # Update brain display
+                self.update_queue.put(('update_brain', None))
+                
+                # Check if stuck with enhanced detection - call is_stuck to update counter
+                is_currently_stuck = self.agent.is_stuck(game_frame)
+                if self.agent.stuck_counter > 30:  # Use explicit counter check after updating
+                    # More aggressive unstuck actions
+                    if self.agent.stuck_counter > 50:
+                        # Try movement + escape combo
+                        direction = random.choice(["up", "down", "left", "right"])
+                        self.ai_press(direction, "Force Movement")
+                        time.sleep(0.2)
+                        escape_move = random.choice(["B", "start", "select"])
+                        self.ai_press(escape_move, "Force Escape")
+                    else:
+                        # Try escape moves first
+                        escape_moves = ["B", "start", "select"]
+                        move = random.choice(escape_moves)
+                        self.ai_press(move, "Unstuck")
+                    
+                    self.agent.log_decision(state, "unstuck_action", f"Agent stuck counter: {self.agent.stuck_counter}")
+                    time.sleep(0.3)  # Shorter delay
+                    continue
+                
+                action_taken = None
+                reasoning = ""
+                
+                # Light cooldown check to prevent excessive spam
+                if time.time() - self.agent.last_action_time < self.agent.action_cooldown:
+                    time.sleep(0.01)  # Very short sleep, don't skip entire loop
+                    continue
+                
+                # Goal-driven decision making (only if goal system is not paused)
+                goal_action = None
+                if (not getattr(self.agent, 'goal_system_paused', False) and 
+                    self.agent.current_goal is not None):
+                    # Check if current_goal is a proper Goal object
+                    if hasattr(self.agent.current_goal, 'name') and hasattr(self.agent.current_goal, 'goal_type'):
+                        try:
+                            goal_action = self.agent.goal_system.get_goal_action(
+                                self.agent.current_goal, state, screen_analysis
+                            )
+                        except Exception as e:
+                            print(f"Error getting goal action: {e}")
+                            goal_action = {"action": "explore", "direction": "random"}
+                    else:
+                        # Invalid goal object, clear it
+                        print(f"Invalid goal object: {type(self.agent.current_goal)}, clearing...")
+                        self.agent.current_goal = None
+                
+                if goal_action and goal_action["action"] == "navigate":
+                    # Use pathfinding for navigation goals
+                    if state in ["Overworld", "Water/Flying", "Indoor/Cave"] and time.time() - self.agent.last_move > 0.3:
+                        direction = self.agent.choose_movement(state, screen_analysis)
+                        self.ai_press(direction, "Goal Navigation")
+                        self.agent.last_move = time.time()
+                        action_taken = direction
+                        reasoning = f"Navigating for goal: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                    
+                elif goal_action and goal_action["action"] == "interact":
+                    button = goal_action.get("button", "A")
+                    context = goal_action.get("context", "Goal Action")
+                    self.ai_press(button, context)
+                    action_taken = f"goal_{button.lower()}"
+                    reasoning = f"Goal action: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                    
+                    # Mark goal progress based on context
+                    if context == "heal_team":
+                        self.agent.current_goal.progress = 0.8
+                
+                elif goal_action and goal_action["action"] == "battle":
+                    strategy = goal_action.get("strategy", "default")
+                    if strategy == "aggressive":
+                        self.ai_press("A", "Goal Battle")
+                    elif strategy == "win":
+                        result = self.agent.handle_trainer_battle(screen_analysis, self.ai_press)
+                    action_taken = "goal_battle"
+                    reasoning = f"Battle for goal: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                    
+                elif goal_action and goal_action["action"] == "catch_sequence":
+                    result = self.agent.handle_wild_battle(screen_analysis, self.ai_press)
+                    action_taken = "goal_catch"
+                    reasoning = f"Catching Pokemon for goal: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                    
+                elif goal_action and goal_action["action"] == "dialogue":
+                    print(f"Processing dialogue goal action in state: {state}")
+                    result = self.agent.handle_dialogue_menu(screen_analysis, self.ai_press)
+                    action_taken = "goal_dialogue"
+                    reasoning = f"Dialogue for goal: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                    print(f"Dialogue result: {result}")
+                
+                elif goal_action and goal_action["action"] == "explore":
+                    # Enhanced exploration for goals - always auto-explore regardless of exploration_type
+                    if state in ["Overworld", "Water/Flying", "Indoor/Cave"] and time.time() - self.agent.last_move > 0.3:
+                        direction = self.agent.choose_movement(state, screen_analysis)
+                        self.ai_press(direction, "Goal Exploration")
+                        self.agent.last_move = time.time()
+                        action_taken = direction
+                        reasoning = f"Auto-exploring for goal: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                
+                elif goal_action and goal_action["action"] == "unstuck_strategy":
+                    method = goal_action.get("method", "random_movement")
+                    if method == "random_movement":
+                        direction = random.choice(["up", "down", "left", "right"])
+                        self.ai_press(direction, "Unstuck")
+                    elif method == "menu_escape":
+                        self.ai_press("B", "Menu Escape")
+                    elif method == "backtrack":
+                        direction = random.choice(["down", "left"])  # Try going back
+                        self.ai_press(direction, "Backtrack")
+                    action_taken = f"unstuck_{method}"
+                    reasoning = f"Goal unstuck strategy: {method}"
+                
+                elif goal_action and goal_action["action"] == "navigate_gym":
+                    # Gym navigation - treat as exploration with focus on finding gym leader
+                    if state in ["Gym"]:
+                        direction = self.agent.choose_movement(state, screen_analysis)
+                        self.ai_press(direction, "Gym Navigation")
+                        action_taken = "gym_navigate"
+                        reasoning = f"Navigating gym for goal: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                
+                elif goal_action and goal_action["action"] == "browse_shop":
+                    # Shop browsing - use existing shop handler
+                    result = self.agent.handle_shop(screen_analysis, self.ai_press)
+                    action_taken = "goal_shop"
+                    reasoning = f"Browsing shop for goal: {getattr(self.agent.current_goal, 'name', 'Unknown')}"
+                
+                elif goal_action and goal_action["action"] == "continue":
+                    # Goal completed or state changed
+                    if "result" in goal_action:
+                        result = goal_action["result"]
+                        if "complete" in result:
+                            if hasattr(self.agent.current_goal, 'id'):
+                                self.agent.goal_system.complete_goal(self.agent.current_goal.id)
+                
+                # Use parallel decision making if no goal action taken
+                if not action_taken:
+                    try:
+                        # Run all AI layers in parallel
+                        parallel_action, parallel_reasoning, parallel_confidence, best_layer, parallel_stats = self.parallel_manager.make_parallel_decision(
+                            frame=game_frame,
+                            ml_frame=ml_frame,
+                            current_state=state,
+                            screen_analysis=screen_analysis,
+                            fast_movement_agent=self.agent.fast_movement_agent if self.agent.use_fast_movement else None,
+                            universal_ai_bridge=self.agent.universal_ai_bridge if self.agent.use_universal_ai else None,
+                            neural_agent=self.agent.neural_agent if self.agent.use_neural_agent else None,
+                            use_neural_agent=self.agent.use_neural_agent
+                        )
+                        
+                        # Execute the best parallel decision
+                        if parallel_action in ["up", "down", "left", "right", "A", "B", "start", "select"]:
+                            if parallel_action != "wait":
+                                self.ai_press(parallel_action, f"{best_layer} ({parallel_confidence:.2f})")
+                            action_taken = parallel_action
+                            reasoning = f"Parallel AI: {parallel_reasoning}"
+                            
+                            # Add performance info to reasoning
+                            speedup = parallel_stats.get('parallel_speedup', 1.0)
+                            if speedup > 1.5:
+                                reasoning += f" (Speedup: {speedup:.1f}x)"
+                                
+                        elif parallel_action == "explore":
+                            # Handle explore action from Universal AI in parallel mode
+                            direction = self.agent.choose_movement(state, screen_analysis)
+                            self.ai_press(direction, f"{best_layer} Explore ({parallel_confidence:.2f})")
+                            action_taken = f"explore_{direction}"
+                            reasoning = f"Parallel AI: {parallel_reasoning} -> {direction}"
+                            
+                        # Log parallel processing stats for debugging
+                        if parallel_stats['layers_completed'] > 1:
+                            print(f"Parallel AI: {parallel_stats['layers_completed']} layers completed in {parallel_stats['total_time']:.3f}s")
+                            if parallel_stats['timeout_layers']:
+                                print(f"  Timeout layers: {parallel_stats['timeout_layers']}")
+                            if parallel_stats['error_layers']:
+                                print(f"  Error layers: {parallel_stats['error_layers']}")
+                        
+                    except Exception as e:
+                        print(f"Parallel decision error: {e}")
+                        # Fallback to sequential if parallel fails
+                        reasoning = f"Parallel AI failed, using fallback: {str(e)}"
+                        action_taken = None
+                    
+                    # Enhanced decision making with new states - ALWAYS move in exploration states
+                    # Also include Battle in case state detection is wrong
+                    if not action_taken and state in ["Overworld", "Water/Flying", "Indoor/Cave", "Battle"]:
+                        # Remove time constraint that might be preventing movement
+                        direction = self.agent.choose_movement(state, screen_analysis)
+                        self.ai_press(direction, "Explore")
+                        self.agent.last_move = time.time()
+                        action_taken = direction
+                        
+                        # Enhanced reasoning with pathfinding info
+                        if self.agent.current_path and self.agent.path_step <= len(self.agent.current_path):
+                            reasoning = f"Following path to {self.agent.current_goal_type} goal ({self.agent.path_step}/{len(self.agent.current_path)})"
+                        else:
+                            reasoning = f"Smart exploration in {state} environment"
+                    
+                    # Force action in dialogue states to prevent freezing
+                    elif state in ["Dialogue/Menu"] and not action_taken:
+                        # Simple dialogue action to prevent getting stuck
+                        print("No goal action taken in Dialogue/Menu, forcing A press")
+                        self.ai_press("A", "Dialogue Fallback")
+                        action_taken = "dialogue_fallback"
+                        reasoning = f"Forced dialogue action to prevent freezing in {state}"
+                    
+                    # Force action in battle states to prevent freezing
+                    elif state in ["Battle", "Wild Battle", "Trainer Battle"] and not action_taken:
+                        # Simple battle action to prevent getting stuck
+                        self.ai_press("A", "Battle Fallback")
+                        action_taken = "battle_fallback"
+                        reasoning = f"Forced battle action to prevent freezing in {state}"
+                elif state == "Wild Battle":
+                    result = self.agent.handle_wild_battle(screen_analysis, self.ai_press)
+                    action_taken = "wild_battle"
+                    reasoning = "Fighting wild Pokemon"
+                    # Continue updating stuck counter even in battle
+                    self.agent.is_stuck(game_frame)
+                    
+                    # Record wild Pokemon encounter
+                    if self.agent.memory_initialized:
+                        self.agent.memory.record_encounter("wild_pokemon", {
+                            "location": self.agent.memory.current_area_hash,
+                            "action": result
+                        })
+                    
+                elif state == "Trainer Battle":
+                    result = self.agent.handle_trainer_battle(screen_analysis, self.ai_press)
+                    action_taken = "trainer_battle"
+                    reasoning = "Fighting trainer Pokemon"
+                    # Continue updating stuck counter even in battle
+                    self.agent.is_stuck(game_frame)
+                    
+                    # Record trainer battle
+                    if self.agent.memory_initialized:
+                        self.agent.memory.record_encounter("trainer_battle", {
+                            "location": self.agent.memory.current_area_hash,
+                            "action": result
+                        })
+                    
+                elif state == "Battle":  # Generic battle fallback
+                    # More aggressive battle handling
+                    if not hasattr(self, 'battle_action_count'):
+                        self.battle_action_count = 0
+                    
+                    # Cycle through different battle actions
+                    battle_actions = ["A", "A", "down", "A", "B"]  # Attack, attack, different move, attack, run/back
+                    action = battle_actions[self.battle_action_count % len(battle_actions)]
+                    self.battle_action_count += 1
+                    
+                    self.ai_press(action, "Battle")
+                    action_taken = "battle_action"
+                    reasoning = f"In battle, action {self.battle_action_count}: {action}"
+                    # Continue updating stuck counter even in battle
+                    self.agent.is_stuck(game_frame)
+                    
+                elif state == "Pokemon Center":
+                    result = self.agent.handle_pokemon_center(screen_analysis, self.ai_press)
+                    action_taken = "pokemon_center"
+                    reasoning = "At Pokemon Center - healing team"
+                    
+                    # Record Pokemon Center landmark
+                    if self.agent.memory_initialized and self.agent.pathfinder:
+                        current_pos = self.agent.pathfinder.get_player_position(game_frame)
+                        if current_pos:
+                            self.agent.memory.record_landmark("pokemon_centers", current_pos, "Pokemon Center")
+                    
+                elif state == "Shop":
+                    # Double-check if it's really a shop or just a menu
+                    if screen_analysis.get('has_menu', False):
+                        # Probably just a menu, handle as dialogue instead
+                        result = self.agent.handle_dialogue_menu(screen_analysis, self.ai_press)
+                        action_taken = "menu_mistaken_for_shop"
+                        reasoning = "Menu detected instead of shop - handling as dialogue"
+                    else:
+                        result = self.agent.handle_shop(screen_analysis, self.ai_press)
+                        action_taken = "shop"
+                        reasoning = "At shop - browsing items"
+                        
+                        # Record shop landmark
+                        if self.agent.memory_initialized and self.agent.pathfinder:
+                            current_pos = self.agent.pathfinder.get_player_position(game_frame)
+                            if current_pos:
+                                self.agent.memory.record_landmark("shops", current_pos, "Shop/Mart")
+                    
+                elif state == "Gym":
+                    result = self.agent.handle_gym(screen_analysis, self.ai_press)
+                    action_taken = "gym"
+                    reasoning = "At gym - challenging leader"
+                    
+                    # Record gym landmark
+                    if self.agent.memory_initialized and self.agent.pathfinder:
+                        current_pos = self.agent.pathfinder.get_player_position(game_frame)
+                        if current_pos:
+                            self.agent.memory.record_landmark("gyms", current_pos, "Pokemon Gym")
+                    
+                elif state == "Dialogue/Menu":
+                    result = self.agent.handle_dialogue_menu(screen_analysis, self.ai_press)
+                    action_taken = result
+                    reasoning = "Handling dialogue/menu interaction"
+                    if result == "waiting" or result == "waiting_cooldown":
+                        reasoning = "Waiting to avoid button spam"
+                        # Don't sleep if just waiting for cooldown
+                        if result != "waiting_cooldown":
+                            time.sleep(0.2)  # Reduced delay
+                    else:
+                        time.sleep(0.1)  # Very short delay for other menu actions
+                    
+                else:
+                    self.ai_press("A", "Default")
+                    action_taken = "default_A"
+                    reasoning = f"Unknown state {state}, defaulting to A"
+                
+                # Update agent memory and logs
+                if action_taken:
+                    self.agent.update_history(state, action_taken)
+                    self.agent.log_decision(state, action_taken, reasoning)
+                    self.agent.last_action_time = time.time()  # Update action time
+                    
+                    # Increment step counter only when action is taken
+                    if self.agent.memory_initialized and action_taken in ["up", "down", "left", "right"]:
+                        self.agent.memory.memory_data["statistics"]["steps_taken"] += 1
+                else:
+                    # Emergency action if no action was taken in movement states
+                    if state in ["Overworld", "Water/Flying", "Indoor/Cave"]:
+                        print(f"DEBUG: No action taken in {state}, forcing emergency movement")
+                        direction = random.choice(["up", "down", "left", "right"])
+                        self.ai_press(direction, "Emergency")
+                        self.agent.last_move = time.time()
+                        self.agent.last_action_time = time.time()
+                        action_taken = direction
+                        reasoning = "Emergency movement - no action was taken"
+                        self.agent.update_history(state, action_taken)
+                        self.agent.log_decision(state, action_taken, reasoning)
+                
+                # Enhanced state change detection with transition tracking
+                current_time = time.time()
+                if self.agent.last_state != state:
+                    # Track state transition
+                    self.agent.state_transition_history.append({
+                        'from': self.agent.last_state,
+                        'to': state,
+                        'time': current_time,
+                        'frame_hash': hash(game_frame.tobytes()) if game_frame is not None else None
+                    })
+                    
+                    # Log significant transitions
+                    if self.agent.last_state and state:
+                        transition_type = self.classify_transition(self.agent.last_state, state)
+                        if transition_type:
+                            print(f"STATE TRANSITION: {self.agent.last_state} -> {state} ({transition_type})")
+                            self.add_to_history(f"TRANSITION: {transition_type}", "System")
+                    
+                    self.agent.last_state = state
+                    self.agent.last_state_change_time = current_time
+                    # Reset stuck counter on state change
+                    self.agent.stuck_counter = 0
+                    
+                    # Clear state override on natural transitions to battles/overworld
+                    if hasattr(self.agent, 'state_override') and self.agent.state_override:
+                        if state in ["Battle", "Wild Battle", "Trainer Battle", "Overworld"]:
+                            print(f"Clearing state override due to natural transition to {state}")
+                            self.agent.state_override = None
+                            self.current_state_label.config(text=f"State: {state}", fg='#9CA3AF')
+                
+                # Keep state transition history manageable
+                if len(self.agent.state_transition_history) > 20:
+                    self.agent.state_transition_history = self.agent.state_transition_history[-10:]
+                    
+            except Exception as e:
+                print(f"Error in agent loop: {e}")
+                time.sleep(1)
+                
+            time.sleep(0.02)
+    
+    def on_closing(self):
+        """Handle application closing - cleanup resources"""
+        try:
+            print("Shutting down VGA...")
+            
+            # Stop agent loop
+            if hasattr(self.agent, 'running'):
+                self.agent.running = False
+            
+            # Cleanup parallel decision manager
+            if hasattr(self, 'parallel_manager') and self.parallel_manager:
+                self.parallel_manager.cleanup()
+            
+            # Stop keyboard listener
+            if hasattr(self, 'listener'):
+                self.listener.stop()
+                
+            # Destroy GUI
+            self.root.destroy()
+            
+        except Exception as e:
+            print(f"Error during shutdown: {e}")
+            self.root.destroy()
+            
+    def run(self):
+        try:
+            self.root.mainloop()
+        finally:
+            if hasattr(self, 'listener'):
+                self.listener.stop()
+
+def main():
+    app = UnifiedGameAgentGUI()
+    app.run()
+
+if __name__ == "__main__":
+    main()

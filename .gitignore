@@ -1,0 +1,93 @@
+# Ignore emulator folders and large artifacts
+training_data/**
+!training_data/.gitkeep
+Emulator/**
+!Emulator/.gitkeep
+ocr_training/
+Results/
+agent/venv/
+agent/tools/
+venv/
+
+# ML Training Data and Models (can be too large to upload to github)
+agent/training_data/
+agent/models/
+agent/maps/
+*.h5
+*.pkl
+*.joblib
+*.npy
+
+# General Python stuff
+__pycache__/
+*.py[cod]
+.env/
+.venv/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+.git
+.mypy_cache
+.pytest_cache
+.hypothesis
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Binaries and ROMs
+*.sav
+*.state
+*.gba
+*.nds
+*.bin
+*.zip
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Large files (>100MB) - GitHub limit
+*.iso
+*.img
+*.dmg
+
+# TensorFlow/ML specific
+logs/
+checkpoints/
+tensorboard/
+wandb/
+mlruns/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Documentation builds
+docs/_build/
+
+# Virtual environments
+pip-selfcheck.json
+
+# Claude configuration
+.claude/
