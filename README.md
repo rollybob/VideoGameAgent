@@ -37,10 +37,10 @@ VideoGameAgent/
 
 ## Running
 
-Start your emulator, then run the main agent:
+Start your emulator, then run the main agent from the repository root:
 
 ```bash
-python agent/VGA.py
+python -m agent.VGA
 ```
 
 ## License

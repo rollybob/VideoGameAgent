@@ -8,6 +8,12 @@ from datetime import datetime
 from pynput import keyboard
 import queue
 import json
+import sys
+
+if __package__ is None and __name__ == "__main__":
+    # Allow running this file directly from the agent/ directory
+    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    __package__ = "agent"
 from typing import Dict, Any
 import cv2
 import numpy as np
@@ -106,25 +112,30 @@ class GameAgent:
         self.current_goal = None
         self.last_goal_update = time.time()
         
-        # ML State Detection system - use paths that work from both directories
+        # ML State Detection system - store paths but delay heavy imports
         import os
         if os.path.exists("models"):
             # Running from agent/ directory
-            model_path = "models"
-            data_path = "training_data"
+            self.model_path = "models"
+            self.data_path = "training_data"
         else:
             # Running from root directory
-            model_path = "agent/models"
-            data_path = "agent/training_data"
-        
-        # Lazy initialize ML detector (only loads TensorFlow when needed)
-        DetectorClass = get_ml_detector_class()
-        self.ml_detector = DetectorClass(
-            model_path=model_path, 
-            data_path=data_path
-        )
+            self.model_path = os.path.join("agent", "models")
+            self.data_path = os.path.join("agent", "training_data")
+
+        # Defer ML detector creation until needed to avoid long startup time
+        self.ml_detector = None
         self.use_ml_detection = False  # Start with traditional detection
         self.ml_model_loaded = False
+
+    def ensure_ml_detector(self):
+        """Instantiate the ML detector on demand."""
+        if self.ml_detector is None:
+            DetectorClass = get_ml_detector_class()
+            self.ml_detector = DetectorClass(
+                model_path=self.model_path,
+                data_path=self.data_path,
+            )
         
         # Neural agent system
         self.neural_agent = None
@@ -1487,6 +1498,7 @@ class UnifiedGameAgentGUI:
     def load_ml_model(self):
         """Load the ML model"""
         try:
+            self.agent.ensure_ml_detector()
             # Try loading with appropriate backend
             if ML_BACKEND == "sklearn":
                 success = self.agent.ml_detector.load_model(model_type="random_forest")
@@ -1510,6 +1522,7 @@ class UnifiedGameAgentGUI:
     def train_ml_model(self):
         """Train the ML model with collected data"""
         try:
+            self.agent.ensure_ml_detector()
             # Check data availability first
             stats = self.agent.ml_detector.get_data_collection_stats()
             if stats['total'] < 50:  # Minimum samples needed
@@ -1530,6 +1543,7 @@ class UnifiedGameAgentGUI:
     def _train_model_async(self):
         """Train model asynchronously"""
         try:
+            self.agent.ensure_ml_detector()
             # Check which ML backend we're using
             if ML_BACKEND == "sklearn":
                 success = self.agent.ml_detector.train_model(model_type="random_forest")
@@ -1550,6 +1564,7 @@ class UnifiedGameAgentGUI:
     def collect_training_data(self):
         """Collect training data with current state label"""
         try:
+            self.agent.ensure_ml_detector()
             # Use clean frame for training if available, otherwise use regular frame
             training_frame = self.agent.current_ml_frame if self.agent.current_ml_frame is not None else self.agent.current_frame
             if training_frame is None:
@@ -1573,6 +1588,7 @@ class UnifiedGameAgentGUI:
     def show_data_stats(self):
         """Show data collection statistics"""
         try:
+            self.agent.ensure_ml_detector()
             print("Data Stats button clicked!")  # Debug print
             stats = self.agent.ml_detector.get_data_collection_stats()
             print(f"Got stats: {stats}")  # Debug print
@@ -1634,6 +1650,7 @@ class UnifiedGameAgentGUI:
     def toggle_autonomous_training(self):
         """Toggle autonomous training on/off"""
         try:
+            self.agent.ensure_ml_detector()
             current_state = self.agent.ml_detector.auto_collection_enabled
             self.agent.ml_detector.enable_autonomous_training(not current_state)
             
@@ -1662,6 +1679,7 @@ class UnifiedGameAgentGUI:
     def toggle_manual_review(self):
         """Toggle manual data collection review"""
         try:
+            self.agent.ensure_ml_detector()
             current_state = self.agent.ml_detector.manual_review_enabled
             self.agent.ml_detector.enable_manual_review(not current_state)
             
@@ -1764,9 +1782,10 @@ class UnifiedGameAgentGUI:
             if game_frame is None:
                 self.add_to_history("ERROR: Failed to capture screenshot from emulator", "System")
                 return
-            
+
             # Add to pending review (will be labeled later)
             self.add_to_history("Adding screenshot to pending review...", "System")
+            self.agent.ensure_ml_detector()
             pending_count = self.agent.ml_detector.add_to_pending_review(game_frame)
             
             # Update review button
@@ -2281,6 +2300,7 @@ class UnifiedGameAgentGUI:
     def review_pending_samples(self):
         """Open review window for pending uncertain samples"""
         try:
+            self.agent.ensure_ml_detector()
             pending_count = self.agent.ml_detector.get_pending_review_count()
             if pending_count == 0:
                 self.add_to_history("NO SAMPLES TO REVIEW", "System")
@@ -2355,6 +2375,7 @@ class UnifiedGameAgentGUI:
             
             # Create state selection buttons in a grid
             self.label_buttons = {}
+            self.agent.ensure_ml_detector()
             states = self.agent.ml_detector.class_names
             
             # Arrange buttons in rows of 3
@@ -2431,6 +2452,7 @@ class UnifiedGameAgentGUI:
     def load_next_review_sample(self):
         """Load the next sample for review"""
         try:
+            self.agent.ensure_ml_detector()
             sample = self.agent.ml_detector.get_next_uncertain_sample()
             if sample is None:
                 # No more samples
@@ -2502,6 +2524,7 @@ class UnifiedGameAgentGUI:
     def save_and_next_sample(self):
         """Save the current sample with manual label and load next"""
         try:
+            self.agent.ensure_ml_detector()
             if self.current_review_sample is None:
                 self.add_to_history("ERROR: No sample to save", "System")
                 return
@@ -2570,6 +2593,7 @@ class UnifiedGameAgentGUI:
     def save_and_next_sample_with_label(self, manual_label):
         """Save sample with specified label and advance to next"""
         try:
+            self.agent.ensure_ml_detector()
             if self.current_review_sample is None:
                 self.add_to_history("ERROR: No sample to save", "System")
                 return
@@ -2861,6 +2885,7 @@ class UnifiedGameAgentGUI:
             
     def agent_loop(self):
         """Main agent loop"""
+        self.agent.ensure_ml_detector()
         while True:
             try:
                 if self.agent.paused:
