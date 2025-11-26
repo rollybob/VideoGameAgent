@@ -131,3 +131,21 @@ agent/scripts/GBA sprites/
 
 # Vendor/model repos (keep external)
 environments/perception/RT-DETR/
+
+# Perception datasets and outputs (keep local)
+environments/perception/archive/real_training_data_legacy/
+environments/perception/archive/training_data_legacy/
+environments/perception/assisted_training_data/
+environments/perception/competitive_training_data/
+environments/perception/consolidated_datasets/
+environments/perception/dataset/
+environments/perception/incremental_training/
+environments/perception/outputs/
+environments/perception/overlay_checks/
+environments/perception/yolo_training/
+environments/perception/competition_session_*.json
+environments/perception/dataset_registry.json
+environments/perception/detections_cache.json
+environments/perception/detection_test_result.png
+environments/perception/test_direct_capture.png
+environments/perception/New Text Document.txt
