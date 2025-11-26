@@ -1,0 +1,101 @@
+{
+  "player": [
+    "player",
+    "hero",
+    "protagonist",
+    "main character"
+  ],
+  "npc": [
+    "npc",
+    "villager",
+    "citizen",
+    "shopkeeper",
+    "trainer",
+    "non player character"
+  ],
+  "enemy": [
+    "enemy",
+    "foe",
+    "monster",
+    "creature",
+    "pokemon",
+    "opponent"
+  ],
+  "collectible": [
+    "collectible",
+    "pickup",
+    "item",
+    "coin",
+    "potion",
+    "pokeball",
+    "treasure",
+    "chest"
+  ],
+  "projectile": [
+    "projectile",
+    "bullet",
+    "fireball",
+    "arrow"
+  ],
+  "hazard": [
+    "hazard",
+    "spikes",
+    "spike trap",
+    "pit",
+    "lava",
+    "fire"
+  ],
+  "door_portal": [
+    "door",
+    "portal",
+    "doorway",
+    "gate",
+    "ladder",
+    "stairs",
+    "cave entrance"
+  ],
+  "ui_panel": [
+    "dialog box",
+    "menu box",
+    "message box",
+    "ui panel",
+    "text box",
+    "window"
+  ],
+  "ui_text": [
+    "dialog text",
+    "menu text",
+    "ui text",
+    "subtitle",
+    "number text"
+  ],
+  "ui_meter": [
+    "health bar",
+    "hp bar",
+    "life bar",
+    "experience bar",
+    "exp bar",
+    "mana bar"
+  ],
+  "terrain_grass": [
+    "grass",
+    "grass tile"
+  ],
+  "terrain_tree": [
+    "tree",
+    "tree tile"
+  ],
+  "terrain_water": [
+    "water",
+    "river",
+    "lake",
+    "ocean"
+  ],
+  "structure": [
+    "building",
+    "house",
+    "wall",
+    "structure",
+    "gatehouse"
+  ]
+}

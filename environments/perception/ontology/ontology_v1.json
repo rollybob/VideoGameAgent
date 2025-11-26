@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "classes": [
+    "building",
+    "dialogue_box",
+    "exp_bar",
+    "grass",
+    "hp_bar",
+    "menu_box",
+    "npc_character",
+    "player_character",
+    "pokeball_item",
+    "pokemon_sprite",
+    "tree",
+    "water"
+  ]
+}

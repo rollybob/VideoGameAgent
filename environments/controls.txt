@@ -1,0 +1,29 @@
+hotkeys
+
+SPACE — toggle current box
+
+
+] or . — next box
+
+
+[ or , — previous box
+
+
+x — disable all boxes
+
+
+k — keep all boxes
+
+
+a — save & next (current image only)
+
+
+s — save (stay)
+
+n — next (don’t save)
+
+
+r — recompute detections for this image (ignores cache)
+
+
+q — quit (cache persists)

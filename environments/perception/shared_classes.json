@@ -1,0 +1,25 @@
+{
+  "classes": [
+    "building",
+    "dialogue_box",
+    "hp_bar",
+    "menu_box",
+    "npc_character",
+    "player_character",
+    "pokemon_sprite",
+    "text_area",
+    "tree",
+    "pokeball/item",
+    "grass",
+    "water",
+    "exp._bar",
+    "level_indicator",
+    "other"
+  ],
+  "last_updated": "2025-08-25T00:50:33.952889",
+  "version": "ff9199d6",
+  "metadata": {
+    "total_classes": 15,
+    "source": "SharedClassManager"
+  }
+}

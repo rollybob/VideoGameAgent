@@ -1,0 +1,133 @@
+# Emulator binaries
+Emulator/
+!Emulator/.gitkeep
+
+# ROMs and game images
+*.gba
+*.gb
+*.gbc
+*.nds
+*.iso
+*.bin
+*.img
+*.zip
+*.rar
+*.7z
+*.sav
+*.state
+Emulator/mGBA/roms/
+
+# Toolchain/vendor bundles (keep helper scripts/docs/config)
+agent/tools/
+!agent/tools/*.py
+!agent/tools/**/*.md
+!agent/tools/**/*.txt
+!agent/tools/**/*.rst
+!agent/tools/**/*.license
+!agent/tools/**/*.lic
+!agent/tools/**/*.LICENSE
+!agent/tools/**/*.cfg
+!agent/tools/**/*.ini
+
+# Models and checkpoints
+agent/models/
+models/
+agent/yolov8n.pt
+yolov8n.pt
+*.gguf
+*.h5
+*.hdf5
+*.pkl
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.pb
+*.ckpt
+*.npz
+*.npy
+
+# Training data and run outputs
+training_data/
+agent/training_data/
+backseat_training_data/
+competitive_session_training/
+datasets/
+runs/
+logs/
+Results/
+ocr_training/
+
+# Maps and emulator configs (exclude)
+maps/*.json
+agent/maps/*.json
+Emulator/mGBA/*.ini
+
+# Python caches and build artifacts
+__pycache__/
+*.py[cod]
+*.so
+.build/
+dist/
+build/
+*.egg-info/
+.eggs/
+.mypy_cache/
+.pytest_cache/
+.hypothesis/
+.tox/
+.coverage
+.coverage.*
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+*.log
+
+# Local development environments
+.env
+.env.*
+.venv/
+venv/
+env/
+agent/venv/
+pip-log.txt
+pip-delete-this-directory.txt
+pip-selfcheck.json
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# TensorBoard/ML runs
+tensorboard/
+wandb/
+mlruns/
+checkpoints/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Documentation builds
+docs/_build/
+
+# Local backups
+_local_backup/
+
+# Debug artifacts and sprite assets
+agent/debug_*.png
+agent/debug_full_*.png
+perception_debug_*.jpg
+agent/scripts/GBA sprites/
+
+# Vendor/model repos (keep external)
+environments/perception/RT-DETR/

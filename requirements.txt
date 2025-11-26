@@ -1,0 +1,40 @@
+# Core GUI and input
+pyautogui>=0.9.54
+pygetwindow>=0.0.9
+pynput>=1.8.0
+
+# Vision and OCR
+opencv-python>=4.12.0
+pillow>=11.3.0
+numpy>=2.1.0
+pytesseract>=0.3.13
+easyocr>=1.7.0
+ultralytics>=8.3.0
+torch>=2.0.1
+torchvision>=0.15.2
+
+# NLP and LLM reasoning
+spacy>=3.8.0
+sentence-transformers>=5.0.0
+langchain>=0.3.0
+llama-cpp-python>=0.3.0
+transformers>=4.40.0
+
+# Core ML utilities
+scikit-learn>=1.6.0
+joblib>=1.5.1
+faiss-cpu>=1.7.4
+psutil>=5.9.0
+textblob>=0.19.0
+
+# RL and training (optional)
+stable-baselines3[extra]>=2.3.0
+tensorboard>=2.19.0
+wandb>=0.17.0
+optuna>=3.6.0
+
+# Platform-specific helpers
+pywin32>=301
+
+# Optional: TensorFlow stack (uncomment if needed)
+# tensorflow>=2.19.0
