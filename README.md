@@ -1,16 +1,37 @@
-﻿# Game Agent Emulator Bot
+# Universal Game Agent
 
-This project is an AI-driven game agent designed to interact with emulators (like mGBA) using OCR (Optical Character Recognition) and simulated key inputs. The goal is to automate gameplay tasks like movement, battle actions, and dialogue progression using screen analysis and simple decision logic.
+> **STATUS: WORK IN PROGRESS**
+>
+> This project is under active development. Architecture and modules are implemented,
+> but full integration testing requires GPU hardware. Contributions welcome!
+
+An AI agent designed to play **any video game** autonomously by reading the screen, understanding game state, and making intelligent decisions.
 
 ---
 
 ## Features
 
-- Simulates directional and button input using `pyautogui`
-- Reads screen text with `pytesseract` (OCR)
-- Detects game states: Overworld, Dialogue/Menu, and Battle
-- Automatically explores or battles depending on context
-- Works with mGBA emulator running Game Boy Advance games
+### Multi-Platform Support
+- **Console Emulators**: GBA, GBC, NES, SNES, N64, Genesis, PS1 (via mGBA, RetroArch, etc.)
+- **PC Games**: Native Windows games, Steam, GOG, Epic
+- **Mobile Games**: Android via BlueStacks, LDPlayer, NoxPlayer, MEmu
+
+### Intelligent Decision Making
+- **Tiered Architecture**: Fast reactions (<20ms), medium analysis (500ms), strategic planning (5s+)
+- **Behavior Trees**: Deterministic, fast decision-making for real-time gameplay
+- **LLM Integration**: Strategic reasoning when hardware permits (Mistral 7B, DialoGPT)
+- **Heuristic Fallbacks**: Works on CPU-only systems
+
+### Perception System
+- **Object Detection**: YOLOv8 for game element recognition
+- **OCR**: EasyOCR + Tesseract for text reading
+- **State Detection**: Automatic game state classification (battle, dialogue, exploration)
+
+### Learning & Adaptation
+- **Tutorial Learning**: Parses in-game tutorials to learn mechanics
+- **Knowledge Transfer**: Applies genre knowledge to new games
+- **User Assistance**: Can ask for help when stuck
+- **Web Search Ready**: Framework for looking up guides online
 
 ---
 
@@ -19,80 +40,167 @@ This project is an AI-driven game agent designed to interact with emulators (lik
 ```
 GameAgentUSB/
 ├── agent/
-│   ├── main.py
-│   ├── screen_reader.py
-│   ├── input_controller.py
-│   ├── ocr_test.py
-│   ├── test_input.py
-│   ├── tools/
-│   │   └── tesseract/
-├── Emulator/
-│   └── (Place your ROMs here)
-├── Results/
-├── ocr_training/
-└── requirements.txt
+│   ├── realtime_agent.py       # Main real-time agent
+│   ├── tiered_decision_system.py # Fast/medium/slow layers
+│   ├── behavior_tree.py        # Behavior tree framework
+│   ├── pokemon_behaviors.py    # Pokemon-specific trees
+│   │
+│   ├── perception_engine.py    # YOLO + OCR perception
+│   ├── screen_reader.py        # Screen capture & state detection
+│   ├── text_analyzer.py        # NLP for game text
+│   │
+│   ├── platform_adapter.py     # Multi-emulator support
+│   ├── pc_game_adapter.py      # PC games (Steam, etc.)
+│   ├── mobile_game_adapter.py  # Android emulators
+│   │
+│   ├── strategy_engine.py      # LLM-ready strategic reasoning
+│   ├── knowledge_acquisition.py # Multi-source learning
+│   ├── memory_system.py        # Persistent world state
+│   │
+│   ├── config.py               # Centralized configuration
+│   ├── debug_system.py         # Logging & performance monitoring
+│   └── ROADMAP.md              # Development roadmap
+│
+├── environments/               # Training environments
+├── requirements.txt            # Python dependencies
+└── README.md
 ```
 
 ---
 
 ## Requirements
 
-Install the following Python packages:
+### Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Make sure you also:
+### External Tools
 
-- Download and install Tesseract OCR: https://github.com/tesseract-ocr/tesseract
-- Add Tesseract to your system PATH or manually configure the path in your scripts.
+- **Tesseract OCR**: [Download](https://github.com/tesseract-ocr/tesseract)
+  - Add to system PATH or configure path in `config.py`
+
+- **Emulator(s)** (as needed):
+  - mGBA for GBA games
+  - RetroArch for multi-platform
+  - BlueStacks/LDPlayer for Android games
+
+### Optional (for full features)
+
+- **CUDA-capable GPU**: For YOLO and LLM acceleration
+- **vgamepad**: For virtual Xbox controller support
+- **ADB**: For reliable Android emulator input
 
 ---
 
 ## Quick Start
 
-1. Clone the repository:
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/YOUR_USERNAME/GameAgentUSB.git
-   cd GameAgentUSB/agent
+   cd GameAgentUSB
    ```
 
-2. Install Python dependencies:
+2. **Install dependencies**:
    ```bash
-   pip install -r ../requirements.txt
+   pip install -r requirements.txt
    ```
 
-3. Install Tesseract OCR:
-   - Download and install from the link above.
-   - Ensure it's added to your system PATH or update the script path manually.
+3. **Configure paths** (optional):
+   ```python
+   # Edit agent/config.py or let it auto-detect
+   ```
 
-4. Start your emulator (e.g., mGBA) with a valid `.gba` ROM in the `/Emulator/` directory.
+4. **Start your game** (emulator or PC game)
 
-5. Run the agent:
+5. **Run the agent**:
    ```bash
-   python main.py
+   cd agent
+   python realtime_agent.py
    ```
+
+   Or use auto-detection:
+   ```python
+   from platform_adapter import PlatformAdapterFactory
+   adapter = PlatformAdapterFactory.auto_detect()
+   ```
+
+---
+
+## Supported Platforms
+
+| Platform | Status | Adapter |
+|----------|--------|---------|
+| GBA (mGBA) | Tested | `platform_adapter.py` |
+| RetroArch | Ready | `RetroArchAdapter` |
+| SNES/NES/N64 | Ready | `platform_adapter.py` |
+| PC Games | Ready | `pc_game_adapter.py` |
+| Steam Games | Ready | `SteamGameAdapter` |
+| Android (BlueStacks) | Ready | `mobile_game_adapter.py` |
+| Android (LDPlayer) | Ready | `mobile_game_adapter.py` |
+
+---
+
+## Architecture
+
+```
+                    Game Screen
+                         |
+                         v
+              ┌──────────────────┐
+              │  Screen Capture  │
+              └────────┬─────────┘
+                       |
+                       v
+              ┌──────────────────┐
+              │ Perception Engine │  (YOLO + OCR)
+              └────────┬─────────┘
+                       |
+          ┌────────────┼────────────┐
+          v            v            v
+    ┌──────────┐ ┌──────────┐ ┌──────────┐
+    │   Fast   │ │  Medium  │ │   Slow   │
+    │  <20ms   │ │  500ms   │ │   5s+    │
+    │ Behavior │ │  State   │ │ Strategy │
+    │  Trees   │ │ Analysis │ │   LLM    │
+    └────┬─────┘ └────┬─────┘ └────┬─────┘
+         |            |            |
+         v            v            v
+              ┌──────────────────┐
+              │ Platform Adapter │
+              └────────┬─────────┘
+                       |
+                       v
+                  Game Input
+```
 
 ---
 
 ## ROM Disclaimer
 
-This project does not include any ROM files, nor does it encourage piracy. If you're using this agent:
+This project does not include any ROM files. If using with emulators:
 
-- Ensure that you own physical copies of any ROMs you use.
-- Do not push ROM files to GitHub (they're listed in `.gitignore` for this reason).
-- Respect all copyright and licensing laws.
+- Ensure you own physical copies of any games you emulate
+- Do not commit ROM files to version control
+- Respect all copyright and licensing laws
 
 ---
 
-## Notes
+## Contributing
 
-- Currently optimized for the mGBA emulator. You can change the emulator title in `find_emulator_window()` if needed.
-- Works best with pixel-perfect rendering settings for OCR accuracy.
+Contributions are welcome! Areas that need work:
+
+- [ ] Testing on more games/platforms
+- [ ] Additional game profiles
+- [ ] Web search implementation for guides
+- [ ] Behavior trees for other genres
+- [ ] iOS support research
+
+See `agent/ROADMAP.md` for detailed development plans.
 
 ---
 
 ## License
 
-This repository is open for academic, research, or personal development. Do not use it for unauthorized automation in commercial software or services.
+This repository is open for academic, research, or personal development. Do not use for unauthorized automation in commercial software or online multiplayer games.

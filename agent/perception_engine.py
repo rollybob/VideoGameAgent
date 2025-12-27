@@ -2,7 +2,7 @@
 VISION: Perception Engine - Modular AI Game Agent
 =============================================
 
-The "eyes" of our intelligent agent - combines YOLOv8 object detection with 
+The "eyes" of our intelligent agent - combines YOLOv8 object detection with
 advanced OCR to create rich, structured understanding of game screens.
 
 Replaces the limited CNN state classification with comprehensive visual analysis.
@@ -14,7 +14,6 @@ import time
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass
 from pathlib import Path
-import logging
 
 # YOLOv8 for object detection
 from ultralytics import YOLO
@@ -24,9 +23,22 @@ import easyocr
 import pytesseract
 from PIL import Image
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Use centralized config and logging
+try:
+    from config import get_config
+    from debug_system import get_debugger, info, debug, warning, error
+    _config = get_config()
+    _use_debug_system = True
+except ImportError:
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    _config = None
+    _use_debug_system = False
+
+    def info(layer, msg, **kwargs): logging.info(f"[{layer}] {msg}")
+    def debug(layer, msg, **kwargs): logging.debug(f"[{layer}] {msg}")
+    def warning(layer, msg, **kwargs): logging.warning(f"[{layer}] {msg}")
+    def error(layer, msg, **kwargs): logging.error(f"[{layer}] {msg}")
 
 
 @dataclass
@@ -82,19 +94,33 @@ class PerceptionEngine:
     """
     
     def __init__(self, model_path: Optional[str] = None):
-        self.model_path = model_path
-        
+        # Use config if available
+        if _config:
+            self.model_path = model_path or _config.paths.yolo_model
+            self.use_gpu = _config.perception.ocr_gpu
+            self.yolo_confidence = _config.perception.yolo_confidence
+            self.yolo_device = _config.perception.yolo_device
+            self.ocr_languages = _config.perception.ocr_languages
+            self.ocr_confidence_threshold = _config.perception.ocr_confidence_threshold
+        else:
+            self.model_path = model_path
+            self.use_gpu = False
+            self.yolo_confidence = 0.5
+            self.yolo_device = "cpu"
+            self.ocr_languages = ["en"]
+            self.ocr_confidence_threshold = 0.3
+
         # Initialize object detector (YOLOv8)
         self.yolo_model = None
         self.initialize_object_detector()
-        
+
         # Initialize OCR engines
         self.easyocr_reader = None
         self.initialize_ocr_engines()
-        
+
         # Game-specific configurations
         self.game_context_rules = self.load_context_rules()
-        
+
         # Performance tracking
         self.stats = {
             'frames_processed': 0,
@@ -102,35 +128,39 @@ class PerceptionEngine:
             'total_objects_detected': 0,
             'total_text_detected': 0
         }
-    
+
     def initialize_object_detector(self):
         """Initialize YOLOv8 model for object detection"""
         try:
             if self.model_path and Path(self.model_path).exists():
-                logger.info(f"Loading custom YOLO model: {self.model_path}")
+                info("perception", f"Loading custom YOLO model: {self.model_path}")
                 self.yolo_model = YOLO(self.model_path)
             else:
-                logger.info("Loading default YOLOv8n model")
+                info("perception", "Loading default YOLOv8n model")
                 self.yolo_model = YOLO('yolov8n.pt')  # Nano version for speed
-                
-            logger.info("SUCCESS: YOLOv8 object detector initialized")
-            
+
+            info("perception", "YOLOv8 object detector initialized")
+
         except Exception as e:
-            logger.error(f"Failed to initialize YOLO: {e}")
+            error("perception", f"Failed to initialize YOLO: {e}")
             self.yolo_model = None
-    
+
     def initialize_ocr_engines(self):
         """Initialize OCR engines with optimal settings"""
         try:
             # EasyOCR - better for diverse fonts and languages
-            self.easyocr_reader = easyocr.Reader(['en'], gpu=False)  # CPU for compatibility
-            logger.info("SUCCESS: EasyOCR initialized")
-            
+            info("perception", f"Initializing EasyOCR (GPU: {self.use_gpu})")
+            self.easyocr_reader = easyocr.Reader(
+                self.ocr_languages,
+                gpu=self.use_gpu
+            )
+            info("perception", "EasyOCR initialized")
+
             # Pytesseract config for game text (fallback)
             self.tesseract_config = '--psm 6 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.,!?-: '
-            
+
         except Exception as e:
-            logger.error(f"Failed to initialize OCR: {e}")
+            error("perception", f"Failed to initialize OCR: {e}")
             self.easyocr_reader = None
     
     def load_context_rules(self) -> Dict[str, Any]:
@@ -200,7 +230,7 @@ class PerceptionEngine:
             return perception
             
         except Exception as e:
-            logger.error(f"Error in frame analysis: {e}")
+            error("perception", f"Error in frame analysis: {e}")
             return self._create_empty_perception()
     
     def _detect_objects(self, frame: np.ndarray) -> List[DetectedObject]:
@@ -241,7 +271,7 @@ class PerceptionEngine:
             return detected_objects
             
         except Exception as e:
-            logger.error(f"Object detection error: {e}")
+            error("perception", f"Object detection error: {e}")
             return []
     
     def _detect_text(self, frame: np.ndarray) -> List[DetectedText]:
@@ -284,7 +314,7 @@ class PerceptionEngine:
             return detected_text
             
         except Exception as e:
-            logger.error(f"Text detection error: {e}")
+            error("perception", f"Text detection error: {e}")
             return []
     
     def _map_to_game_object(self, yolo_class: str, x1: float, y1: float, x2: float, y2: float, frame: np.ndarray) -> str:
