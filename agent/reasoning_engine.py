@@ -400,8 +400,8 @@ Reasoning: [why this response is optimal]
         
         # From perception (object names)
         for obj in perception.detected_objects:
-            if hasattr(obj, 'object_class') and obj.object_class:
-                entities.append(obj.object_class)
+            if hasattr(obj, 'object_type') and obj.object_type:
+                entities.append(obj.object_type)
         
         # From UI elements and commands
         entities.extend(text_analysis.ui_elements)
@@ -468,13 +468,13 @@ Reasoning: [why this response is optimal]
                 spatial['screen_regions']['bottom'].append(obj)
             
             spatial['object_positions'].append({
-                'object': getattr(obj, 'object_class', 'unknown'),
+                'object': getattr(obj, 'object_type', 'unknown'),
                 'position': getattr(obj, 'center', (0, 0)),
                 'confidence': getattr(obj, 'confidence', 0.0)
             })
         
         # Add text positions
-        for text in perception.detected_texts:
+        for text in perception.detected_text:
             spatial['text_positions'].append({
                 'text': text.text,
                 'position': text.center,
@@ -508,9 +508,9 @@ Reasoning: [why this response is optimal]
         """Prepare context data for LLM prompt"""
         return {
             'game_context': game_context.current_state,
-            'objects': [f"{obj.object_class}({obj.confidence:.2f})" 
+            'objects': [f"{obj.object_type}({obj.confidence:.2f})"
                        for obj in game_context.perception.detected_objects[:5]],
-            'text_content': [text.text for text in game_context.perception.detected_texts[:5]],
+            'text_content': [text.text for text in game_context.perception.detected_text[:5]],
             'ui_elements': game_context.text_analysis.ui_elements,
             'intents': [f"{intent.intent_type}({intent.confidence:.2f})" 
                        for intent in game_context.text_analysis.intents[:3]],
@@ -896,13 +896,13 @@ if __name__ == "__main__":
             timestamp=time.time(),
             detected_objects=[
                 DetectedObject(
-                    object_class="pokemon",
+                    object_type="pokemon",
                     confidence=0.9,
                     bbox=(100, 100, 200, 200),
                     center=(150, 150)
                 )
             ],
-            detected_texts=[
+            detected_text=[
                 DetectedText(
                     text="FIGHT",
                     confidence=0.95,
@@ -911,8 +911,11 @@ if __name__ == "__main__":
                     is_menu_item=True
                 )
             ],
-            scene_description="Battle screen with menu options",
-            confidence=0.85
+            game_context="battle",
+            dominant_colors=["blue"],
+            screen_regions={},
+            confidence=0.85,
+            processing_time=0.05
         )
         
         # Mock text analysis data

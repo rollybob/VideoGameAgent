@@ -36,5 +36,12 @@ optuna>=3.6.0
 # Platform-specific helpers
 pywin32>=301
 
+# Virtual controller for PC games (Xbox controller emulation)
+vgamepad>=0.1.0
+
+# Web game support (browser automation)
+selenium>=4.15.0
+webdriver-manager>=4.0.0
+
 # Optional: TensorFlow stack (uncomment if needed)
 # tensorflow>=2.19.0

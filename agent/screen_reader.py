@@ -6,8 +6,19 @@ import time
 import pytesseract
 from PIL import Image
 
-# Point this at your Tesseract executable
-pytesseract.pytesseract.tesseract_cmd = r"F:\\GameAgentUSB\\agent\\tools\\tesseract\\tesseract.exe"
+# Use centralized configuration for Tesseract path
+try:
+    from config import get_tesseract_cmd
+    tesseract_path = get_tesseract_cmd()
+    if tesseract_path:
+        pytesseract.pytesseract.tesseract_cmd = tesseract_path
+except ImportError:
+    # Fallback if config not available
+    import os
+    pytesseract.pytesseract.tesseract_cmd = os.environ.get(
+        'TESSERACT_CMD',
+        r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    )
 
 def find_emulator_window(title_keyword="mGBA", debug=False):
     windows = gw.getWindowsWithTitle(title_keyword)
