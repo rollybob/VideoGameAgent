@@ -2,13 +2,27 @@
 # This is the lightweight set the brief calls for -- none of the torch/ultralytics/
 # llm/rl stack in the old requirements.txt is needed to close the loop.
 #
+# Environment markers split the platform-specific backend deps (see
+# vga/core/emulator.py): Windows/macOS use pyautogui+pygetwindow; Linux uses
+# xdotool (a system package, not pip) for input/window ops and mss for capture.
+#
 # OCR (pytesseract) additionally needs the Tesseract-OCR binary installed and on
 # PATH (or in C:\Program Files\Tesseract-OCR). If it is absent, OCR self-disables
 # and the loop still runs.
 
 numpy>=1.24
-opencv-python>=4.8
 pillow>=10.0
-pyautogui>=0.9.54
-pygetwindow>=0.0.9
 pytesseract>=0.3.13   # optional: advisory OCR only; loop runs without the binary
+
+# OpenCV: headless build on Linux (servers/Xvfb have no GUI libs); regular build
+# elsewhere. Both provide the same `cv2` module.
+opencv-python>=4.8 ; sys_platform != "linux"
+opencv-python-headless>=4.8 ; sys_platform == "linux"
+
+# Windows/macOS desktop backend (no-op / unavailable on Linux).
+pyautogui>=0.9.54 ; sys_platform != "linux"
+pygetwindow>=0.0.9 ; sys_platform != "linux"
+
+# Linux (X11/Xvfb) backend: screen capture. Input + window geometry use the
+# `xdotool` system package (apt install xdotool), which is not a pip dependency.
+mss>=9.0 ; sys_platform == "linux"

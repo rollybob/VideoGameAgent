@@ -62,3 +62,8 @@ debug_*.png
 perception_debug_*.jpg
 runs/
 logs/
+
+# Session logs (local working logs; canonical copies live in the Obsidian vault
+# on Tim's PC). Convention: every project under ~/projects/<name>/ has a
+# gitignored sessions/ subfolder.
+sessions/
