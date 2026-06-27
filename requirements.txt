@@ -1,0 +1,14 @@
+# Minimal dependencies for the VGA live loop (vga/ package).
+# This is the lightweight set the brief calls for -- none of the torch/ultralytics/
+# llm/rl stack in the old requirements.txt is needed to close the loop.
+#
+# OCR (pytesseract) additionally needs the Tesseract-OCR binary installed and on
+# PATH (or in C:\Program Files\Tesseract-OCR). If it is absent, OCR self-disables
+# and the loop still runs.
+
+numpy>=1.24
+opencv-python>=4.8
+pillow>=10.0
+pyautogui>=0.9.54
+pygetwindow>=0.0.9
+pytesseract>=0.3.13   # optional: advisory OCR only; loop runs without the binary
