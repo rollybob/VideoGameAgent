@@ -26,3 +26,8 @@ pygetwindow>=0.0.9 ; sys_platform != "linux"
 # Linux (X11/Xvfb) backend: screen capture. Input + window geometry use the
 # `xdotool` system package (apt install xdotool), which is not a pip dependency.
 mss>=9.0 ; sys_platform == "linux"
+
+# System-2 reasoner backend (vga/reason/): the Claude vision API is the
+# development-time teacher. Only needed for the live VLM loop -- the stub reasoner
+# and --selftest run without it.
+anthropic>=0.40 ; sys_platform == "linux"

@@ -67,3 +67,24 @@ logs/
 # on Tim's PC). Convention: every project under ~/projects/<name>/ has a
 # gitignored sessions/ subfolder.
 sessions/
+train/ocr/data*/
+train/ocr/ckpt*/
+train/policy/data*/
+train/policy/ckpt*/
+captures/
+
+# F18 font corpus (downloaded; do not commit)
+train/ocr/corpus/
+
+# Decomp/ROM real-glyph font assets (copyrighted game graphics: training input
+# only, NOT redistributed -- same policy as ROMs/captures). See DECOMP_FONT_PLAYBOOK.
+train/ocr/fonts/decomp/
+
+# Downloaded model weights (fetch on demand; see train/ocr/detect_east.py)
+train/ocr/models/
+
+# Captured game frames + savestates (copyrighted game data: local training
+# input only, NOT redistributed -- same policy as ROMs/captures)
+train/perception/mode_data/
+train/ram/*.state
+train/ram/smoke_frame.png
