@@ -1,0 +1,38 @@
+# VLM inference image for VGA's System-2 reasoner (--backend local).
+#
+# Built FROM the existing thor-torch:cu130 image (CUDA 13 + torch 2.12.1+cu130 on
+# Blackwell/aarch64) so we keep the working torch build and just add the VLM serving
+# stack on top. We do NOT reinstall torch/torchvision here - that would risk pulling a
+# different torch and breaking the CUDA-13 build.
+#
+# Build:  docker build -t thor-vlm:cu130 -f serve/Dockerfile.vlm serve
+# Run:    see serve/run_server.sh
+FROM thor-torch:cu130
+
+# transformers (recent, for Qwen3-VL support) + the Qwen vision helper + a tiny
+# HTTP server. pillow for image decode. --no-deps is NOT used: we let pip resolve
+# transformers' own deps (tokenizers, safetensors) but torch is already present and
+# satisfied, so it won't be reinstalled.
+# --break-system-packages: the base image's Debian python is "externally managed"
+# (PEP 668) and refuses system-wide pip installs otherwise. This is a throwaway
+# container python, so overriding it is fine and intended.
+RUN python3 -m pip install --no-cache-dir --break-system-packages \
+        "transformers>=4.57" \
+        accelerate \
+        qwen-vl-utils \
+        pillow \
+        flask
+
+# transformers 5.x requires torchvision for image processing (even the slow path).
+# Install it from the SAME official cu130 index the base image used for torch, so the
+# torchvision build matches torch 2.12.1+cu130 and doesn't pull/replace torch.
+RUN python3 -m pip install --no-cache-dir --break-system-packages \
+        torchvision --index-url https://download.pytorch.org/whl/cu130
+
+# The model weights are NOT baked into the image - they are mounted at runtime from
+# the host (~/models/...) so the image stays small and the model is swappable.
+WORKDIR /srv
+COPY serve_vlm.py /srv/serve_vlm.py
+
+# PORT and MODEL_DIR are provided at runtime (see run_server.sh).
+CMD ["python3", "/srv/serve_vlm.py"]
