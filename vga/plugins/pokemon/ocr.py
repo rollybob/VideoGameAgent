@@ -78,6 +78,49 @@ class Ocr:
             return ""
         return self._validate(raw, min_chars)
 
+    def read_lines_in(self, frame: np.ndarray, detector, pad: int = 2,
+                      min_chars: int = 2) -> list:
+        """Region-gated OCR: use `detector` (core.textdetect.TextDetector) to find
+        text LINES, then OCR each line crop in single-line mode. Returns the
+        validated line strings top-to-bottom. This is the fix for whole-strip OCR:
+        the recognizer only ever sees one tight line at a time (the earlier failure
+        was feeding it merged multi-line blocks). Empty list if OCR/detector off."""
+        if not self.enabled or detector is None or not getattr(detector, "enabled", False):
+            return []
+        if frame is None or frame.size == 0:
+            return []
+        h, w = frame.shape[:2]
+        lines = []
+        for (bx, by, bw, bh) in detector.group_lines(detector.detect(frame)):
+            x0, y0 = max(0, bx - pad), max(0, by - pad)
+            x1, y1 = min(w, bx + bw + pad), min(h, by + bh + pad)
+            crop = frame[y0:y1, x0:x1]
+            if crop.size == 0:
+                continue
+            txt = self._read_line(crop, min_chars)
+            if txt:
+                lines.append(txt)
+        return lines
+
+    def _read_line(self, region_bgr: np.ndarray, min_chars: int) -> str:
+        """OCR a single tight text line. Upscales small lines, Otsu-binarizes, and
+        normalizes to dark-text-on-light (so it works on both polarities, e.g. FE's
+        white-on-dark). --psm 7 = treat as one line. Never raises."""
+        try:
+            gray = cv2.cvtColor(region_bgr, cv2.COLOR_BGR2GRAY)
+            if gray.shape[0] < 24:                      # upscale tiny lines for Tesseract
+                scale = 24.0 / gray.shape[0]
+                gray = cv2.resize(gray, (max(1, int(gray.shape[1] * scale)), 24),
+                                  interpolation=cv2.INTER_CUBIC)
+            _, th = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            if float(th.mean()) < 127:                  # ensure dark text on light bg
+                th = 255 - th
+            raw = pytesseract.image_to_string(Image.fromarray(th), config="--oem 3 --psm 7")
+        except Exception as e:  # noqa: BLE001
+            self.logger(f"[ocr] line read failed: {e}")
+            return ""
+        return self._validate(raw, min_chars)
+
     @staticmethod
     def _validate(raw: str, min_chars: int) -> str:
         """Expected-format check: keep only plausible dialogue text. Reject noise."""
