@@ -1,0 +1,38 @@
+{"frame": "frames/000000.png", "goal": "Select the 'Rumors' option from the menu.", "button": "A", "kind": "commit", "menu": "pub", "cursor": 0, "target": 0}
+{"frame": "frames/000001.png", "goal": "Select the 'Rumors' option from the menu.", "button": "up", "kind": "move", "menu": "pub", "cursor": 1, "target": 0}
+{"frame": "frames/000002.png", "goal": "Select the 'Rumors' option from the menu.", "button": "up", "kind": "move", "menu": "pub", "cursor": 2, "target": 0}
+{"frame": "frames/000003.png", "goal": "Select the 'Rumors' option from the menu.", "button": "up", "kind": "move", "menu": "pub", "cursor": 3, "target": 0}
+{"frame": "frames/000004.png", "goal": "Select the 'Missions' option from the menu.", "button": "down", "kind": "move", "menu": "pub", "cursor": 0, "target": 1}
+{"frame": "frames/000005.png", "goal": "Select the 'Missions' option from the menu.", "button": "A", "kind": "commit", "menu": "pub", "cursor": 1, "target": 1}
+{"frame": "frames/000006.png", "goal": "Select the 'Missions' option from the menu.", "button": "up", "kind": "move", "menu": "pub", "cursor": 2, "target": 1}
+{"frame": "frames/000007.png", "goal": "Select the 'Missions' option from the menu.", "button": "up", "kind": "move", "menu": "pub", "cursor": 3, "target": 1}
+{"frame": "frames/000008.png", "goal": "Select the 'Quit Mission' option from the menu.", "button": "down", "kind": "move", "menu": "pub", "cursor": 0, "target": 2}
+{"frame": "frames/000009.png", "goal": "Select the 'Quit Mission' option from the menu.", "button": "down", "kind": "move", "menu": "pub", "cursor": 1, "target": 2}
+{"frame": "frames/000010.png", "goal": "Select the 'Quit Mission' option from the menu.", "button": "A", "kind": "commit", "menu": "pub", "cursor": 2, "target": 2}
+{"frame": "frames/000011.png", "goal": "Select the 'Quit Mission' option from the menu.", "button": "up", "kind": "move", "menu": "pub", "cursor": 3, "target": 2}
+{"frame": "frames/000012.png", "goal": "Select the 'Leave' option from the menu.", "button": "down", "kind": "move", "menu": "pub", "cursor": 0, "target": 3}
+{"frame": "frames/000013.png", "goal": "Select the 'Leave' option from the menu.", "button": "down", "kind": "move", "menu": "pub", "cursor": 1, "target": 3}
+{"frame": "frames/000014.png", "goal": "Select the 'Leave' option from the menu.", "button": "down", "kind": "move", "menu": "pub", "cursor": 2, "target": 3}
+{"frame": "frames/000015.png", "goal": "Select the 'Leave' option from the menu.", "button": "A", "kind": "commit", "menu": "pub", "cursor": 3, "target": 3}
+{"frame": "frames/000016.png", "goal": "Select the 'Pub' option from the menu.", "button": "A", "kind": "commit", "menu": "wm_location", "cursor": 0, "target": 0}
+{"frame": "frames/000017.png", "goal": "Select the 'Pub' option from the menu.", "button": "up", "kind": "move", "menu": "wm_location", "cursor": 1, "target": 0}
+{"frame": "frames/000018.png", "goal": "Select the 'Pub' option from the menu.", "button": "up", "kind": "move", "menu": "wm_location", "cursor": 2, "target": 0}
+{"frame": "frames/000019.png", "goal": "Select the 'Shop' option from the menu.", "button": "down", "kind": "move", "menu": "wm_location", "cursor": 0, "target": 1}
+{"frame": "frames/000020.png", "goal": "Select the 'Shop' option from the menu.", "button": "A", "kind": "commit", "menu": "wm_location", "cursor": 1, "target": 1}
+{"frame": "frames/000021.png", "goal": "Select the 'Shop' option from the menu.", "button": "up", "kind": "move", "menu": "wm_location", "cursor": 2, "target": 1}
+{"frame": "frames/000022.png", "goal": "Select the 'Monster Bank' option from the menu.", "button": "down", "kind": "move", "menu": "wm_location", "cursor": 0, "target": 2}
+{"frame": "frames/000023.png", "goal": "Select the 'Monster Bank' option from the menu.", "button": "down", "kind": "move", "menu": "wm_location", "cursor": 1, "target": 2}
+{"frame": "frames/000024.png", "goal": "Select the 'Monster Bank' option from the menu.", "button": "A", "kind": "commit", "menu": "wm_location", "cursor": 2, "target": 2}
+{"frame": "frames/000025.png", "goal": "Select the 'Party' option from the menu.", "button": "A", "kind": "commit", "menu": "wm_main", "cursor": 0, "target": 0}
+{"frame": "frames/000026.png", "goal": "Select the 'Party' option from the menu.", "button": "up", "kind": "move", "menu": "wm_main", "cursor": 1, "target": 0}
+{"frame": "frames/000027.png", "goal": "Select the 'Party' option from the menu.", "button": "up", "kind": "move", "menu": "wm_main", "cursor": 2, "target": 0}
+{"frame": "frames/000028.png", "goal": "Select the 'Area List' option from the menu.", "button": "down", "kind": "move", "menu": "wm_main", "cursor": 0, "target": 1}
+{"frame": "frames/000029.png", "goal": "Select the 'Area List' option from the menu.", "button": "A", "kind": "commit", "menu": "wm_main", "cursor": 1, "target": 1}
+{"frame": "frames/000030.png", "goal": "Select the 'Area List' option from the menu.", "button": "up", "kind": "move", "menu": "wm_main", "cursor": 2, "target": 1}
+{"frame": "frames/000031.png", "goal": "Select the 'System' option from the menu.", "button": "down", "kind": "move", "menu": "wm_main", "cursor": 0, "target": 2}
+{"frame": "frames/000032.png", "goal": "Select the 'System' option from the menu.", "button": "down", "kind": "move", "menu": "wm_main", "cursor": 1, "target": 2}
+{"frame": "frames/000033.png", "goal": "Select the 'System' option from the menu.", "button": "A", "kind": "commit", "menu": "wm_main", "cursor": 2, "target": 2}
+{"frame": "frames/000034.png", "goal": "Read and advance the dialogue.", "button": "A", "kind": "dialog", "menu": "help", "cursor": -1, "target": -1}
+{"frame": "frames/000035.png", "goal": "Read and advance the dialogue.", "button": "A", "kind": "dialog", "menu": "help", "cursor": -1, "target": -1}
+{"frame": "frames/000036.png", "goal": "Read and advance the dialogue.", "button": "A", "kind": "dialog", "menu": "help", "cursor": -1, "target": -1}
+{"frame": "frames/000037.png", "goal": "Read and advance the dialogue.", "button": "A", "kind": "dialog", "menu": "help", "cursor": -1, "target": -1}

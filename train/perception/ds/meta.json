@@ -1,0 +1,21 @@
+{
+  "classes": [
+    "field",
+    "menu",
+    "dialog"
+  ],
+  "img_h": 96,
+  "img_w": 144,
+  "n_train": 145,
+  "n_val": 35,
+  "train_hist": {
+    "field": 48,
+    "menu": 68,
+    "dialog": 29
+  },
+  "val_hist": {
+    "field": 12,
+    "menu": 16,
+    "dialog": 7
+  }
+}
