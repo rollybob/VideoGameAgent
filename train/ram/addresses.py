@@ -37,6 +37,24 @@ FFTA = {
                                               # via live memory API AND the decline control.
     "mode_overlay":    (0x02003cb7, "u8"),    # UI-overlay flag: 208=missions list, 255=wm-menu,
                                               # 204=area list, 3=help, 0=field/pub/dialog.
-    # TODO (battle map): grid cursor x/y, unit HP/positions -- from a battle state (needs Tim
-    # to drive into a Herb Picking battle, or scripting the world-map travel to its node).
+    # Found 2026-07-03 by multi-group EWRAM diffing (train/ram/find_wm_state.py; 27 dumps in
+    # sessions/wm-ram-dumps-0703/) -- constant within scene groups, distinct across them:
+    "scene":           (0x0200027f, "u8"),    # 6=town/pub interior, 7=world map, 14=battle map
+                                              # (0x02000282 mirrors it; fallback if 027f drifts).
+    "clan_pos":        (0x02001f69, "u8"),    # clan's world-map node: 18=Cyril, 20=Giza Plains,
+                                              # 26=Sprohm. Herb Picking's battle is at Giza (20)
+                                              # per the bat1/bat2 dumps.
+    # Naming-screen signals, found 2026-07-03 by multi-group diffing around
+    # train/ram/ffta_naming.state (docs/RESCUE_PLAN.md P2b). Both are u32 reads of
+    # 4-byte UI tile-buffer signatures -- a single byte was too collision-prone:
+    "naming_sig":      (0x02003d30, "u32"),   # 0x888888f9 while the naming keyboard is up
+                                              # (incl. under the confirm box); 0 once the
+                                              # name is committed. B cannot escape naming,
+                                              # so sig ON->OFF == name committed.
+    "dialog_sig":      (0x02004eb0, "u32"),   # 0x99999999 while a dialog/confirm box is up.
+                                              # NOT unique to the confirm box (post-commit
+                                              # dialogue uses the same buffer) -- only
+                                              # meaningful combined with naming_sig ON.
+    # TODO (battle map): grid cursor x/y, unit HP/positions -- battle placement-phase dumps
+    # exist (sessions/wm-ram-dumps-0703/bat2); travel is scriptable, no Tim-driven state needed.
 }

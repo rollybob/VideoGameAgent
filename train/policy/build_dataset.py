@@ -97,7 +97,10 @@ def _read_traj(traj_dir: str, w: int, h: int, dedup_thresh: float = 0.0):
             if not line:
                 continue
             step = json.loads(line)
-            rel = step.get("frame_before")
+            # run_reasoner/teacher trajectories log "frame_before"; bench_ladder rollouts
+            # log the same pre-action observation as "frame" (rollout.py saves the PNG
+            # before the policy acts on it) -- accept either.
+            rel = step.get("frame_before") or step.get("frame")
             if not rel:
                 continue
             frame = _load_frame(os.path.join(traj_dir, rel), w, h)

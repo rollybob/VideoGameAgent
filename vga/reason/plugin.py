@@ -38,7 +38,12 @@ DEFAULT_MENU_COMMIT_K = 4
 _DIRECTIONS = {"up", "down", "left", "right"}
 # Cursor directions to CYCLE through when force-moving a stuck cursor (mash-without-progress).
 # Ordered so a horizontal Yes/No and a vertical list both get moved within two forcings.
-_FORCE_DIRS = ["down", "right", "up", "left"]
+#  The 5th slot escalates to START: some screens commit ONLY via Start (the naming
+# keyboard's OK is the canonical case -- naming baseline 2026-07-03: the model A-mashed
+# letters for 40 steps, 0/8 ever pressed Start, because A "confirms" on its GBA prior).
+# Directions are tried first (cheap, reversible); Start comes up once a full direction
+# cycle has failed to break the mash. Start is safe-reversible on GBA UIs (menus toggle).
+_FORCE_DIRS = ["down", "right", "up", "left", "start"]
 # Scene-change threshold (of 256 aHash bits) above which a carried-over subgoal is considered
 # STALE and cleared. A carried subgoal surviving a full scene change is the anchor bug (a
 # "Select New Game" subgoal persisting into a battle, observed 2026-07-02). Same scene with
@@ -106,6 +111,18 @@ class VlmPlugin:
                  tutor=None):
         self.reasoner = reasoner
         self.goal = goal
+        # Staged goals (RESCUE_PLAN, 2026-07-03). A single static goal string describing a
+        # multi-phase task re-anchors a stateless per-frame decider onto already-completed
+        # phases (observed: post-accept, the agent walked BACK into the pub because the goal
+        # text still opened with "open the Missions list"). If the goal contains lines
+        # starting with "STAGE:", split it into an ordered stage list; the model only ever
+        # sees the CURRENT stage, and advances it by declaring the sentinel sub-goal
+        # "STAGE DONE" (rides the existing subgoal round-trip -- no server/protocol change).
+        # The pointer is ONE-WAY: a completed stage never comes back, which is exactly the
+        # task memory the scratchpad lacks. Plain goals (no STAGE: lines) behave as before.
+        self._stages = [ln.split(":", 1)[1].strip()
+                        for ln in goal.splitlines() if ln.strip().upper().startswith("STAGE:")]
+        self._stage_i = 0
         self._step = 0
         # Tutorial-learning (docs/TUTORIAL_LEARNING_PLAN.md). `game` keys the KnowledgeStore
         # (persistent declarative facts learned from this game's tutorials); `tutor` is an
@@ -165,6 +182,14 @@ class VlmPlugin:
             except Exception:
                 self._ocr = None
         self.last_decision: Optional[ReasonerDecision] = None
+        # Commit-combo follow-through (2026-07-03). A forced 'start' that OPENS a commit box
+        # is wasted if the model then A-mashes the default (No) and closes it -- the box is
+        # only up for a step or two, so the rotating force cycle rarely lands 'left' inside
+        # that window (measured: naming-fix bench, confirm_reached 8/8 but committed 0/8).
+        # So when a forced 'start' visibly changes the screen, follow through with the
+        # generic select-then-commit gesture: 'left' (non-default option) then 'A'. Dropped
+        # immediately if the start changed nothing (no box appeared).
+        self._pending_combo: list[str] = []
 
     def _loop_score(self, cur_hash: int) -> float:
         """Fraction of the recent window (last loop_window screens, incl. the current one)
@@ -253,7 +278,7 @@ class VlmPlugin:
         if self.knowledge is not None and self.game:
             knowledge = self.knowledge.retrieve(self.game, context=f"{self._mode} {dialog_text}", limit=3)
         ctx = ReasonContext(
-            goal=self.goal, step=self._step,
+            goal=self._current_goal(), step=self._step,
             last_action=(last["button"] if last else ""),
             last_changed=(last["changed"] if last else None),
             history=list(self._history),
@@ -279,14 +304,32 @@ class VlmPlugin:
         # screen each step so it never looks like a loop, and so is never overridden.
         chosen = decision.action.button.value if decision.action.button is not None else "wait"
         forced = None
-        if self._menu_commit_k and looping and len(self._recent_emitted) >= self._menu_commit_k:
+        # Commit-combo follow-through: play out 'left' then 'A' right after a forced
+        # 'start', UNCONDITIONALLY. First version gated this on last.changed and never
+        # fired: the 256-bit aHash misses small overlays (a Yes/No box flips <10 bits,
+        # rollout's changed threshold), so the gate starved on exactly the transitions
+        # it was built for (bench-naming-combo 2026-07-03, committed 0/8 with the gate).
+        # Ungated is safe in context: the scaffold only reaches 'start' in a hopeless
+        # loop, and if no box opened, 'left' is a cursor nudge and 'A' is the same press
+        # the model was already mashing.
+        if self._pending_combo:
+            forced = (self._pending_combo.pop(0),
+                      "commit-combo: following the forced Start with select-then-commit")
+        if forced is None and self._menu_commit_k and looping and len(self._recent_emitted) >= self._menu_commit_k:
             recent = list(self._recent_emitted)
             if all(b in _DIRECTIONS for b in recent):
                 forced = ("A", "commit-forced: moved the cursor repeatedly without selecting")
             elif all(b in ("A", "B") for b in recent):
                 d = _FORCE_DIRS[self._force_i % len(_FORCE_DIRS)]
                 self._force_i += 1
-                forced = (d, "move-forced: pressed A/B in place without progress; move the cursor")
+                if d == "start":
+                    forced = (d, "commit-forced: A/B made no progress even after moving; "
+                                 "trying Start (some screens confirm only with Start)")
+                    # If this start opens a box, follow through with select-then-commit
+                    # on the next steps instead of returning control to the mash.
+                    self._pending_combo = ["left", "A"]
+                else:
+                    forced = (d, "move-forced: pressed A/B in place without progress; move the cursor")
         if forced is not None:
             action = action_from_choice(forced[0], note=forced[1])
             if decision.meta is not None:
@@ -301,6 +344,19 @@ class VlmPlugin:
         new_subgoal = (decision.meta or {}).get("subgoal")
         new_progress = (decision.meta or {}).get("progress")
         new_mode = (decision.meta or {}).get("mode")
+        # Staged-goal advance: the model declared the current stage complete. Consume the
+        # sentinel (it must not persist as a real sub-goal), advance the one-way pointer, and
+        # clear the scratchpad so the next stage starts from what the screen shows.
+        if (self._stages and new_subgoal
+                and str(new_subgoal).strip().upper().startswith("STAGE DONE")):
+            if self._stage_i < len(self._stages) - 1:
+                self._stage_i += 1
+            if decision.meta is not None:
+                decision.meta["stage_advanced_to"] = self._stage_i
+            self._subgoal = ""
+            self._progress = ""
+            self._subgoal_hash = None
+            new_subgoal = None
         if new_subgoal:
             self._subgoal = str(new_subgoal)
             # Stamp the scene this subgoal was set on, so the anti-anchor check above can tell
@@ -327,6 +383,23 @@ class VlmPlugin:
         self._step += 1
         return action
 
+    def _current_goal(self) -> str:
+        """The goal string the model sees this step: the whole goal when unstaged, else the
+        current stage plus the stage-done protocol. Completed stages are summarized in one
+        clause (context without re-anchoring: the model knows they are DONE)."""
+        if not self._stages:
+            return self.goal
+        i = self._stage_i
+        parts = []
+        if i > 0:
+            parts.append(f"Stages already completed (do NOT redo them): "
+                         f"{'; '.join(self._stages[:i])}.")
+        parts.append(f"CURRENT STAGE ({i + 1} of {len(self._stages)}): {self._stages[i]}")
+        if i < len(self._stages) - 1:
+            parts.append('If the current stage is ALREADY COMPLETE on this screen, set your '
+                         'sub-goal to exactly "STAGE DONE".')
+        return " ".join(parts)
+
     def _flush_tutorial(self) -> None:
         """Distill the accumulated tutorial pages into a fact and store it. Best-effort: any
         failure (server down, parse error) is swallowed so tutorial-learning never breaks play."""
@@ -345,6 +418,8 @@ class VlmPlugin:
 
     def reset(self) -> None:
         self._step = 0
+        self._stage_i = 0
+        self._pending_combo = []
         self._history.clear()
         self._recent_hashes.clear()
         self._recent_texts.clear()

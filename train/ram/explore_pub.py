@@ -29,6 +29,7 @@ STATE = os.path.join(os.path.dirname(__file__), "ffta_pub.state")
 PROBES = {
     "worldmap_cursor@2c10": (0x02002c10, "u16"),
     "modeflag@3cb7":        (0x02003cb7, "u8"),
+    "clan_funds@1f64":      (0x02001f64, "u16"),
 }
 
 
@@ -43,6 +44,9 @@ def main():
     ap.add_argument("--then", type=int, default=30)
     ap.add_argument("--out", default="/tmp/pub_explore")
     ap.add_argument("--state", default=STATE)
+    ap.add_argument("--save-state", default="", help="dump a raw savestate here at the end, "
+                    "so the next exploration segment resumes from it (--state <path>) instead "
+                    "of replaying an ever-longer, timing-fragile script from the pub")
     args = ap.parse_args()
 
     os.makedirs(args.out, exist_ok=True)
@@ -60,12 +64,22 @@ def main():
 
     snap(0, "START")
     for i, btn in enumerate(args.script, 1):
-        e.tap(btn.upper(), hold=args.hold, then=args.then)
+        # WAIT / WAIT<n>: idle frames with no press (scene transitions, long fades).
+        if btn.upper().startswith("WAIT"):
+            n = int(btn[4:]) if len(btn) > 4 else args.then
+            e.run(n)
+        else:
+            e.tap(btn.upper(), hold=args.hold, then=args.then)
         snap(i, btn.lower())
 
     # Dump full EWRAM for offline diffing.
     with open(os.path.join(args.out, "ewram_final.bin"), "wb") as f:
         f.write(e.wram_snapshot())
+    if args.save_state:
+        # save_raw_state() returns a cffi unsigned char[]; bytes() copies it out.
+        with open(args.save_state, "wb") as f:
+            f.write(bytes(e.core.save_raw_state()))
+        print(f"[done] savestate -> {args.save_state}", flush=True)
     print(f"[done] wrote frames + ewram_final.bin to {args.out}", flush=True)
 
 

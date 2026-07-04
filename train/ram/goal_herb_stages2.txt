@@ -1,0 +1,3 @@
+STAGE: You are at the pub. Open the Missions list, select the "Herb Picking" mission, and accept it (choose Yes when asked to accept the conditions). Navigate menus with the d-pad and confirm with A.
+STAGE: Leave the pub and return to the world map.
+STAGE: On the world map, press Start to open the menu and choose "Area List". In the Area List, move the cursor down to "Giza Plains" and press A to select it. If a confirmation appears, select Yes and press A.

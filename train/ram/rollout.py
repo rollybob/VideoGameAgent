@@ -147,9 +147,17 @@ def make_policy(kind: str, goal: str, url: str, game: str = "", enable_tutor: bo
 
 def rollout(rom: str, steps: int, policy_kind: str, out_dir: str,
             goal: str = "", url: str = "http://127.0.0.1:8077",
-            hold: int = 6, then: int = 8, load_state: str = "",
-            enable_tutor: bool = False) -> dict:
+            hold: int = 6, then: int = 30, load_state: str = "",
+            enable_tutor: bool = False, task: str = "") -> dict:
+    # `then` (settle frames after each press) was 8 until 2026-07-03: FFTA UI boxes
+    # ignore input for ~30 frames while animating in, so at then=8 an agent's press on a
+    # freshly opened menu/confirm was EATEN (verified deterministically: the golden
+    # naming commit start,left,A fails at then=8 and succeeds at then>=30). That both
+    # blocked commits outright and taught the model that its presses "do nothing".
+    # 30 frames adds ~0.5s emulated time per step -- noise next to the ~8s VLM latency.
     oracle = for_rom(rom)
+    if task:
+        oracle.task = task
     emu = Emu(rom)
     emu.boot(load_save=True)
     if load_state:

@@ -103,6 +103,13 @@ class Ffta(Oracle):
     name = "ffta"
     addrs = FFTA
 
+    # Which checkpoint ladder this oracle scores. "herb" = the pub->mission->travel task;
+    # "naming" = the name-entry micro-ladder (RESCUE_PLAN P2b). Set by rollout(task=...).
+    task = "herb"
+
+    NAMING_SIG_ON = 0x888888F9   # naming_sig while the keyboard is up
+    DIALOG_SIG_ON = 0x99999999   # dialog_sig while a dialog/confirm box is up
+
     def __init__(self):
         self._cursor_history: list[int] = []
 
@@ -133,24 +140,53 @@ class Ffta(Oracle):
     PUB_FUNDS_BASELINE = 5000
 
     def checkpoints(self, cur: dict) -> list:
-        """The "accept the Herb Picking mission" ladder, verified 2026-07-02 by savestate
-        diffing (train/ram/find_mission.py). Only rungs with a CLEAN, control-verified RAM
-        signal are populated; the later world-map/battle rungs are deliberately deferred
-        (curriculum: instrument rung N+1 once the agent reliably clears N, and the battle
-        flag needs a Tim-driven battle state). This measures exactly the menu-commit
-        capability that broke last session.
+        """The Herb Picking ladder. Rungs 0-2 verified 2026-07-02 by savestate diffing
+        (train/ram/find_mission.py); rungs 3-5 added 2026-07-03 from the multi-group EWRAM
+        diff (train/ram/find_wm_state.py: scene@0x0200027f 6=town 7=wm 14=battle,
+        clan_pos@0x02001f69 18=Cyril 20=Giza; constant across all 27 dumps in
+        sessions/wm-ram-dumps-0703/).
 
-            pub_open        : at the pub (definitionally true at load - the rung-0 anchor).
-            mission_list    : reached the Missions list (mode_overlay==208, not Rumors).
-            mission_accepted: paid the info fee -> mission accepted (clan_funds < baseline).
-        Deferred (docs/CHECKPOINT_LADDER_PLAN.md): back_on_worldmap, cursor_at_target(node),
-        mission_started(battle)."""
+            pub_open         : at the pub (definitionally true at load - the rung-0 anchor).
+            mission_list     : reached the Missions list (mode_overlay==208, not Rumors).
+            mission_accepted : paid the info fee -> mission accepted (clan_funds < baseline).
+            worldmap_regained: accepted AND back on the world map (scene==7). Gated on
+                accepted so exiting the pub WITHOUT the mission scores nothing.
+            at_giza          : accepted AND clan node == Giza, Herb Picking's battle site.
+            battle_entered   : accepted AND on the battle map (scene==14).
+        Still deferred: battle-turn rungs (need battle-grid RAM, see addresses.py TODO)."""
+        if self.task == "naming":
+            return self._checkpoints_naming(cur)
         funds = cur.get("clan_funds")
         mode = cur.get("mode_overlay")
+        scene = cur.get("scene")
+        pos = cur.get("clan_pos")
+        accepted = funds is not None and funds < self.PUB_FUNDS_BASELINE
         return [
             ("pub_open", True),
             ("mission_list", mode == 208),
-            ("mission_accepted", funds is not None and funds < self.PUB_FUNDS_BASELINE),
+            ("mission_accepted", accepted),
+            ("worldmap_regained", bool(accepted and scene == 7)),
+            ("at_giza", bool(accepted and pos == 20)),
+            ("battle_entered", bool(accepted and scene == 14)),
+        ]
+
+    def _checkpoints_naming(self, cur: dict) -> list:
+        """Name-entry micro-ladder (RESCUE_PLAN P2b), from train/ram/ffta_naming.state.
+        Signals verified 2026-07-03 (see addresses.py naming_sig/dialog_sig):
+
+            naming_open    : keyboard up (anchor rung, true at load).
+            confirm_reached: the "Confirm action. OK? Yes/No" box opened (Start pressed).
+                Diagnostic rung for the known wall: reaching confirm but committing No.
+            name_committed : keyboard gone. B cannot escape the naming screen, so the
+                only way the sig drops is Yes on the confirm box = name committed.
+        """
+        nsig = cur.get("naming_sig")
+        dsig = cur.get("dialog_sig")
+        naming_on = nsig == self.NAMING_SIG_ON
+        return [
+            ("naming_open", True),
+            ("confirm_reached", bool(naming_on and dsig == self.DIALOG_SIG_ON)),
+            ("name_committed", bool(nsig == 0)),
         ]
 
 

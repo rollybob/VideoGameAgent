@@ -41,6 +41,8 @@ def main():
     ap.add_argument("--goal-file", default="")
     ap.add_argument("--url", default="http://127.0.0.1:8077")
     ap.add_argument("--out-root", default="")
+    ap.add_argument("--task", default="", help="oracle checkpoint ladder to score "
+                    "(e.g. 'naming'); empty = the oracle's default task")
     args = ap.parse_args()
 
     goal = args.goal
@@ -62,7 +64,7 @@ def main():
     for ep in range(args.episodes):
         ep_dir = os.path.join(out_root, f"ep_{ep:02d}")
         rollout(rom, args.steps, args.policy, ep_dir, goal=goal, url=args.url,
-                load_state=state)
+                load_state=state, task=args.task)
         a = analyze(ep_dir)
         ladder = a.get("ladder") or {}
         rung = ladder.get("furthest")
