@@ -19,6 +19,7 @@ docker run --rm --runtime nvidia --network host --user 1000:1000 \
   -v "$VGA":/work -w /work -e MINUTES="$MIN" -e FPS="$FPS" -e NOTIFY=0 \
   -e STATE="${STATE:-/work/train/rl/states/alttp_start_normal.state}" -e SKIP_MENU="${SKIP_MENU:-0}" \
   -e OUT=/work/sessions/agent_run/run.mp4 \
+  -e WALKER="${WALKER:-}" -e S1="${S1:-}" \
   thor-rl:cu130 python3 -u train/rl/drive_agent.py
 RC=$?
 NF=$(ls "$FRAMES"/*.jpg 2>/dev/null | wc -l)

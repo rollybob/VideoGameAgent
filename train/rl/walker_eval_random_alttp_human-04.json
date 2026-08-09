@@ -1,0 +1,131 @@
+{
+ "arm": "random",
+ "state": "alttp_human-04",
+ "episodes": 24,
+ "seed": 500,
+ "reach1": 0.125,
+ "reaches_mean": 0.125,
+ "first_reach_med": 64.0,
+ "eps": [
+  {
+   "reaches": 1,
+   "first": 58,
+   "steps": 99
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 90
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 82
+  },
+  {
+   "reaches": 1,
+   "first": 64,
+   "steps": 153
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 207
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 82
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 75
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 84
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 115
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 81
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 83
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 90
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 186
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 91
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 81
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 177
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 125
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 106
+  },
+  {
+   "reaches": 1,
+   "first": 254,
+   "steps": 308
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 83
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 88
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 74
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 276
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 107
+  }
+ ]
+}

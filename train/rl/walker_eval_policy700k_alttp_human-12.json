@@ -1,0 +1,131 @@
+{
+ "arm": "policy",
+ "state": "alttp_human-12",
+ "episodes": 24,
+ "seed": 500,
+ "reach1": 0.4166666666666667,
+ "reaches_mean": 0.625,
+ "first_reach_med": 107.0,
+ "eps": [
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 99,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 298,
+   "steps": 372
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 218,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 4,
+   "first": 87,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 124,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 23,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 2,
+   "first": 109,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 105,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 2,
+   "first": 91,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 122,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  }
+ ]
+}

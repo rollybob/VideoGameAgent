@@ -15,7 +15,7 @@ VLM runs async (~9s/call) so gameplay never freezes. Segmented (rebuild core eve
 to dodge the mgba long-run segfault. Real-time throttle. PIL overlay -> JPEG frames -> host ffmpeg
 (run_drive.sh). Run in thor-rl:cu130 with the VLM up on 127.0.0.1:8077.
 """
-import os, sys, io, json, time, base64, threading, subprocess, traceback, warnings
+import os, sys, io, re, json, time, base64, threading, subprocess, traceback, warnings
 warnings.filterwarnings("ignore")
 import numpy as np
 ROOT = "/work"
@@ -39,7 +39,7 @@ OUT = os.environ.get("OUT", os.path.join(ROOT, "sessions/agent_run/run.mp4"))
 STATE = os.environ.get("STATE", os.path.join(ROOT, "train/rl/states/alttp_start_normal.state"))
 SKIP_MENU = os.environ.get("SKIP_MENU", "0") == "1"       # start already in gameplay -> skip the title/menu masher
 ROM = os.path.join(ROOT, "Emulator/mGBA/roms/Legend of Zelda, The - A Link To The Past Four Swords (U) [!].gba")
-S1_CKPT = os.environ.get("S1", os.path.join(ROOT, "train/rl/runs/alttp_s1v2_scratch04/ppo_alttp_600000_steps.zip"))
+S1_CKPT = os.environ.get("S1") or os.path.join(ROOT, "train/rl/runs/alttp_s1v2_scratch04/ppo_alttp_600000_steps.zip")   # `or`: empty-string env (wrapper passthrough) falls back too
 DET_PT = os.path.join(DET_DIR, "detector.pt")
 GOAL = ("You are playing The Legend of Zelda: A Link to the Past on GBA. Objectives in order: "
         "(1) get through the title screen / any menus by pressing Start or A; (2) you begin INSIDE "
@@ -79,6 +79,30 @@ from stable_baselines3 import PPO
 s1 = PPO.load(S1_CKPT, device=DEV)
 print(f"loaded S1 {os.path.basename(S1_CKPT)}", flush=True)
 
+# ---- System-1b: goal-conditioned WALKER (the "legs", 2026-08-09) -------------
+# Turns a target SCREEN position into learned navigation: obs = the same 12ch
+# stack + a goal-blob channel (walker_env.goal_channel -- one renderer for train
+# and inference), action = Discrete(9) direction. Targets: a detected ITEM
+# (walk-to-collect, the rung-3 fix) or the VLM's direction rendered as a screen-
+# edge point (intent -> executed walk instead of a blind button hold).
+# WALKER env var = checkpoint path; unset/missing -> feature off, prior behavior.
+WALKER_CKPT = os.environ.get("WALKER", "")
+walker = None
+if WALKER_CKPT and os.path.exists(WALKER_CKPT):
+    from walker_env import goal_channel
+    walker = PPO.load(WALKER_CKPT, device=DEV)
+    print(f"loaded WALKER {os.path.basename(WALKER_CKPT)}", flush=True)
+else:
+    print("walker OFF (set WALKER=<ckpt.zip> to enable)", flush=True)
+WALK_EDGE_PT = {1: lambda lx, ly: (lx, 8), 2: lambda lx, ly: (lx, 151),
+                3: lambda lx, ly: (8, ly), 4: lambda lx, ly: (231, ly)}
+
+
+def walker_dir(stack, sx, sy):
+    obs = np.concatenate(stack + [goal_channel(sx, sy)], axis=-1)
+    a, _ = walker.predict(obs, deterministic=False)
+    return DIRBITS.get(int(np.asarray(a).ravel()[0]), 0)
+
 # ---- raw mgba core ----------------------------------------------------------
 import mgba.core, mgba.image, mgba.gba as gba, mgba.log
 from mgba._pylib import ffi
@@ -113,6 +137,20 @@ def grab(img, w, h):
 def link_world(core):
     iw = ffi.cast("uint8_t *", core._native.memory.iwram)   # movement ORACLE (control, not perception)
     return (iw[0x038F4] | (iw[0x038F5] << 8), iw[0x038F0] | (iw[0x038F1] << 8))
+
+
+def camera(core):
+    """Camera world origin (walker_env's 0x02B82/86 convention). screen = world - camera:
+    lets a WORLD-anchored target stay valid while the camera scrolls during the walk."""
+    iw = ffi.cast("uint8_t *", core._native.memory.iwram)
+    return (iw[0x02B82] | (iw[0x02B83] << 8), iw[0x02B86] | (iw[0x02B87] << 8))
+
+
+def health(core):
+    """Link's HP (WRAM 0x0234D, the oracle.py convention). ==0 means dead/game-over screen:
+    a NON-SPATIAL state where rooms/edges/targets are meaningless (v2.1, brainlegs run:
+    the spatial escalation ground against the continue menu for minutes)."""
+    return int(ffi.cast("uint8_t *", core._native.memory.wram)[0x0234D])
 
 
 def room_cell(core):
@@ -155,8 +193,57 @@ def post_act(frame, det, step, last_btn, last_changed, stuck, brief="", receipts
         return json.loads(r.read().decode())
 
 
+# ---- LEVEL-3 target pointing (v2.1): S2 names a BOX, the walker executes ----
+# Format matters enormously (offline probe 2026-08-09, GT = RAM Link pos): freeform
+# "TARGET x,y" = 0/4 hits (corner echo, what sank brainlegs); the model's NATIVE
+# grounding format -- bounding box normalized to 0-1000 on a 3x-upscaled frame --
+# = 4/4 hits at 17-28px. Ask in the trained format, convert the center host-side.
+POINT_SYS = ("You are a visual grounding assistant looking at ONE Game Boy Advance screen from "
+             "Zelda: A Link to the Past. You output ONE bounding box with coordinates normalized "
+             "to 0-1000, in the exact format asked. Nothing else.")
+
+
+def post_point(frame, avoid):
+    prompt = ("Link is STUCK in this room and must LEAVE it. Locate the ONE best visible thing to "
+              "walk to and interact with to get out: an open doorway, a staircase, stairs down, "
+              "a chest, a floor switch, a pot, or a gap in the walls. "
+              + ("These were already tried and did NOT work, pick something ELSE: "
+                 + "; ".join(avoid) + ". " if avoid else "")
+              + "Output ONLY: (x1,y1),(x2,y2) | what it is")
+    b = io.BytesIO()
+    from PIL import Image
+    Image.fromarray(frame).resize((720, 480), Image.NEAREST).save(b, format="PNG")
+    payload = {"image_b64": base64.b64encode(b.getvalue()).decode(), "prompt": prompt,
+               "system": POINT_SYS, "max_new_tokens": 48}
+    req = urllib.request.Request(VLM + "/read", data=json.dumps(payload).encode(),
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=90) as r:
+        return json.loads(r.read().decode()).get("text", "")
+
+
 def vlm_worker():
     while not stop_flag.is_set():
+        with lock:
+            treq = shared.pop("tgt_req", None)
+        if treq is not None:                                  # point query preempts the /act cycle
+            t_fr, t_cam, t_avoid = treq
+            try:
+                _t = time.time()
+                text = post_point(t_fr, t_avoid)
+                n = [int(v) for v in re.findall(r"\d{1,4}", text.split("|", 1)[0])]
+                pt = None
+                if len(n) >= 4 and all(0 <= v <= 1000 for v in n[:4]):
+                    pt = (min(int((n[0] + n[2]) / 2 * 240 / 1000), 239),
+                          min(int((n[1] + n[3]) / 2 * 160 / 1000), 159))
+                lbl = (text.split("|", 1)[1].strip()[:24] if "|" in text else text.strip()[:24]) or "?"
+                with lock:
+                    shared["tgt_resp"] = {"pt": pt, "cam": t_cam, "label": lbl}
+                print(f"[point] {time.time()-_t:.1f}s -> {pt} {lbl!r} raw={text[:60]!r}", flush=True)
+            except Exception as e:
+                print(f"[point] ERROR {str(e)[:90]}", flush=True)
+                with lock:
+                    shared["tgt_resp"] = {"pt": None, "cam": t_cam, "label": "error"}
+            continue
         with lock:
             fr = None if shared["frame"] is None else shared["frame"].copy()
             det, stp, lb, lc, st = shared["det"], shared["step"], shared["last_btn"], shared["last_changed"], shared["stuck"]
@@ -202,7 +289,13 @@ def write_overlay(frame, link, en, it, drv, info, idx):
         bx(e[0], e[1], (255, 40, 40), 5)
     for i in it:
         bx(i[0], i[1], (40, 140, 255), 5)
-    col = {"S1": (255, 120, 120), "S2nav": (120, 200, 255), "S2": (120, 200, 255), "ESC": (255, 210, 60), "S2wait": (150, 150, 150)}.get(drv, (200, 200, 200))
+    if info.get("tgt") is not None:
+        tx, ty = info["tgt"]
+        if -20 < tx < 260 and -20 < ty < 180:
+            bx(min(max(tx, 4), 236), min(max(ty, 4), 156), (255, 0, 255), 7)
+    col = {"S1": (255, 120, 120), "S2nav": (120, 200, 255), "S2": (120, 200, 255), "ESC": (255, 210, 60), "S2wait": (150, 150, 150),
+           "SWEEP": (255, 160, 40), "TGTwalk": (255, 0, 255), "TGTa": (255, 90, 255), "WALKit": (90, 255, 190), "WALKnav": (140, 230, 255),
+           "GAMEOVER": (255, 60, 60)}.get(drv, (200, 200, 200))
     canvas = Image.new("RGB", (240 * Z, 160 * Z + 46), (0, 0, 0)); canvas.paste(im, (0, 0))
     dr2 = ImageDraw.Draw(canvas)
     dr2.text((6, 160 * Z + 5), f"DRIVER:{drv}  nav:{info['nav']}  VLM#{info['n']}:{info['btn']}  moved:{info['moved']}", fill=col)
@@ -218,8 +311,12 @@ def main():
     threading.Thread(target=vlm_worker, daemon=True).start()
     print(f"driving {DECISIONS} decisions (~{MINUTES}min game) -> {OUT}", flush=True)
     nav_dir = 0; stuck_run = 0; last_vlm_n = -1; last_btn = "wait"; moved_since_vlm = False; escaping = False; entered_game = SKIP_MENU; enemy_run = 0
-    wpos = []; nxt = time.time(); drv_counts = {}
+    wpos = []; nxt = time.time(); drv_counts = {}; item_run = 0
     mem = RoomMemory(); prev_room = None; sweep_jig = 0     # LOGIC LOOP state
+    tgt = None; tgt_deadline = 0; tgt_apress = 0; tgt_cool = 0; tgt_hist = {}   # LEVEL-3 state
+    tgt_asks = {}; tgt_failed = {}                          # per-room ask budget + failed world points (dedup)
+    just_gameover = False; alive_run = 0; dead_run = 0      # suppress the bogus transition receipt on respawn
+    traj = []                                               # full (x, y, drv) trajectory, dumped at end
     PERP = {"up": ("left", "right"), "down": ("right", "left"),
             "left": ("down", "up"), "right": ("up", "down")}
     for step in range(DECISIONS):
@@ -242,37 +339,115 @@ def main():
         if entered_game and prev_room is None:
             mem.enter(room, step); prev_room = room
         if entered_game and room != prev_room:               # TRANSITION receipt: what we were doing WORKED
-            mem.room_changed(prev_room, room, step, last_btn)
-            print(f"[mem] ROOM CHANGE {prev_room}->{room} at step {step} via {last_btn!r} "
-                  f"(rooms={mem.stats()['rooms_visited']})", flush=True)
+            if just_gameover:                                # respawn jump, not an earned exit -- no receipt
+                mem.enter(room, step)
+                print(f"[mem] RESPAWN {prev_room}->{room} at step {step} (no receipt)", flush=True)
+            else:
+                mem.room_changed(prev_room, room, step, last_btn)
+                print(f"[mem] ROOM CHANGE {prev_room}->{room} at step {step} via {last_btn!r} "
+                      f"(rooms={mem.stats()['rooms_visited']})", flush=True)
             prev_room = room
+            tgt = None; tgt_apress = 0; tgt_cool = 0         # targets are room-local
+            with lock:                                       # drop stale point asks/answers from the old room
+                shared.pop("tgt_req", None); shared.pop("tgt_resp", None)
         esc_lvl = mem.escalation(room) if entered_game else 0
-        sweep_edge = None
+        sweep_edge = None; note_btn = None
 
         enemy_run = enemy_run + 1 if len(en) >= 2 else 0     # hysteresis + >=2 -> filter OOD false-positive enemies
+        item_run = item_run + 1 if len(it) >= 1 else 0       # sustained detected item -> walk-to-collect candidate
+        hp = health(core) if entered_game else 1
+        dead_run = dead_run + 1 if (entered_game and hp <= 0) else 0   # hysteresis: savestate BOOT reads hp=0
+        if hp > 0 and just_gameover:                         # for a few decisions (brainlegs2 logged phantom
+            alive_run += 1                                   # RESPAWNs at t=0); a real game-over holds for 100s
+            if alive_run > 150:                              # same-cell respawn: receipt guard expires quietly
+                just_gameover = False
         if not entered_game:                                 # MENU/intro -> structured cycle-tap to advance
             b = MENU_CYCLE[(step // MENU_HOLD) % len(MENU_CYCLE)]
             mask = BTN[b] if step % 2 == 0 else 0            # TAP (press/release edges -- menus need edges, not holds)
             drv = "MENU"; last_btn = b; nav_dir = 0; stuck_run = 0; escaping = False
+        elif dead_run >= 8:                                  # GAME OVER (v2.1): NON-SPATIAL state -- rooms/edges/
+            # targets are meaningless on the continue menu; the spatial escalation ground
+            # against it for minutes in the brainlegs run. Menu-tap through (dpad moves the
+            # cursor, A confirms) until the continue restores health.
+            b = MENU_CYCLE[(step // MENU_HOLD) % len(MENU_CYCLE)]
+            mask = BTN[b] if step % 2 == 0 else 0
+            drv = "GAMEOVER"; last_btn = b; nav_dir = 0; stuck_run = 0; escaping = False
+            just_gameover = True; alive_run = 0; tgt = None
         elif enemy_run >= 4:                                 # SUSTAINED (>=4 decisions) real enemies -> S1 combat
             obs = np.concatenate(stack, axis=-1)
             act, _ = s1.predict(obs, deterministic=False)
             mask = s1_action_to_mask(act); drv = "S1"; nav_dir = 0; stuck_run = 0; escaping = False
-        elif esc_lvl >= 2:                                   # LOGIC-LOOP LEVEL 2: reasoning failed -> SYSTEMATIC exit sweep.
-            # Probe the least-tried screen edge in bounded bursts: hold its direction with a
-            # wall-slip jiggle (perpendicular diagonal every 3rd decision, alternating sides)
-            # + an A-tap every 6th (clears NPC dialogs like the (4,5) guide trap). Every burst's
-            # outcome feeds back into mem's edge stats, so blocked edges rotate out.
-            sweep_edge, sd = mem.sweep_edge(room, step)
-            ph = step % 6
-            if ph == 5:
-                mask = BTN["a"] if step % 2 == 0 else 0
-            elif ph in (2, 4):
-                sweep_jig ^= 1
-                mask = DIR_MASK[BTN_TO_DIR[sd]] | DIR_MASK[BTN_TO_DIR[PERP[sd][sweep_jig]]]
-            else:
-                mask = DIR_MASK[BTN_TO_DIR[sd]]
-            drv = "SWEEP"; last_btn = f"sweep:{sweep_edge}"; nav_dir = BTN_TO_DIR[sd]; escaping = False; stuck_run = 0
+        elif walker is not None and 4 <= item_run <= 120:    # WALKER walk-to-collect: sustained detected item, no enemies.
+            # 120-decision cap per continuous sighting: a phantom/unreachable item cannot
+            # starve the sweep -- after the cap it falls through until the item leaves view.
+            mask = walker_dir(stack, it[0][0], it[0][1])
+            drv = "WALKit"; last_btn = "walk:item"; nav_dir = 0; stuck_run = 0; escaping = False
+        elif esc_lvl >= 2:                                   # LOGIC-LOOP L2/L3: reasoning failed -> host takes over.
+            ccx, ccy = camera(core)
+            if esc_lvl >= 3 and walker is not None and tgt is None and tgt_cool <= step:
+                # LEVEL 3 (v2, post-braintest): blunt edge-probing refuted itself -> S2 names a
+                # TARGET via /read ("TARGET x,y | chest"), anchored to WORLD coords with the
+                # ask-time camera; the walker executes; A on arrival. Failed targets are recorded
+                # and excluded from the next ask. Sweep keeps driving while an ask is in flight.
+                with lock:
+                    if "tgt_resp" in shared:
+                        resp = shared.pop("tgt_resp")
+                        if resp.get("pt"):
+                            kx, ky = resp["cam"]
+                            px, py = kx + resp["pt"][0], ky + resp["pt"][1]
+                            if any(abs(px - fx) + abs(py - fy) <= 24 for fx, fy in tgt_failed.get(room, [])):
+                                # v2.1: the 8B repeats failed points despite the exclusion text
+                                # (brainlegs: same "TARGET 239,15" forever) -> hard dedup + long cooldown
+                                print(f"[tgt] room {room} DUP-FAILED point ({px},{py}) -> sweep", flush=True)
+                                tgt_cool = step + 300
+                            else:
+                                tgt = (px, py, resp["label"])
+                                tgt_deadline = step + 200; tgt_apress = 0
+                                print(f"[tgt] room {room} target {resp['label']!r} world=({px},{py})", flush=True)
+                        else:
+                            tgt_cool = step + 90             # unparseable answer -> sweep interlude, re-ask later
+                    elif "tgt_req" not in shared and tgt_asks.get(room, 0) < 6:
+                        tgt_asks[room] = tgt_asks.get(room, 0) + 1   # per-room ask budget: no /read churn
+                        shared["tgt_req"] = (frame.copy(), (ccx, ccy), list(tgt_hist.get(room, []))[-4:])
+            if tgt is not None:                              # LEVEL-3 drive: walk to the named point, interact
+                wx, wy, wlbl = tgt
+                if abs(lw[0] - wx) + abs(lw[1] - wy) <= 12:
+                    mask = BTN["a"] if step % 2 == 0 else 0
+                    tgt_apress += 1
+                    drv = "TGTa"; last_btn = "tgt:a"; note_btn = "a"
+                    if tgt_apress >= 14:                     # reached + interacted, room unchanged -> target refuted
+                        tgt_hist.setdefault(room, []).append(f"{wlbl} (reached, A did not exit)")
+                        tgt_failed.setdefault(room, []).append((wx, wy))
+                        print(f"[tgt] room {room} REFUTED {wlbl!r} (A no-exit)", flush=True)
+                        tgt = None; tgt_cool = step + 90
+                elif step >= tgt_deadline:
+                    tgt_hist.setdefault(room, []).append(f"{wlbl} (walker could not reach it)")
+                    tgt_failed.setdefault(room, []).append((wx, wy))
+                    print(f"[tgt] room {room} UNREACHABLE {wlbl!r}", flush=True)
+                    tgt = None; tgt_cool = step + 90
+                    mask = 0; drv = "TGTwalk"; note_btn = "walk"
+                else:
+                    mask = walker_dir(stack, wx - ccx, wy - ccy)
+                    drv = "TGTwalk"; last_btn = "tgt:" + wlbl[:12]; note_btn = "walk"
+                nav_dir = 0; escaping = False; stuck_run = 0
+            else:                                            # LEVEL 2 (also L3 while an ask is pending): edge sweep.
+                # Probe the least-tried screen edge in bounded bursts: hold its direction with a
+                # wall-slip jiggle (perpendicular diagonal every 3rd decision, alternating sides)
+                # + an A-tap every 6th (clears NPC dialogs like the (4,5) guide trap). Every burst's
+                # outcome feeds back into mem's edge stats, so blocked edges rotate out.
+                sweep_edge, sd = mem.sweep_edge(room, step)
+                ph = step % 6
+                if ph == 5:
+                    mask = BTN["a"] if step % 2 == 0 else 0
+                    note_btn = "a"                           # v2 fix: sweep A-taps now land in tried[]
+                else:
+                    if ph in (2, 4):
+                        sweep_jig ^= 1
+                        mask = DIR_MASK[BTN_TO_DIR[sd]] | DIR_MASK[BTN_TO_DIR[PERP[sd][sweep_jig]]]
+                    else:
+                        mask = DIR_MASK[BTN_TO_DIR[sd]]
+                    note_btn = sd
+                drv = "SWEEP"; last_btn = f"sweep:{sweep_edge}"; nav_dir = BTN_TO_DIR[sd]; escaping = False; stuck_run = 0
         else:                                                # gameplay: VLM navigates; MASTER anti-freeze if Link is stuck
             if cur_n != last_vlm_n:
                 last_vlm_n = cur_n; last_btn = vbtn; moved_since_vlm = False
@@ -287,27 +462,36 @@ def main():
                 mask = (BTN[esc] if step % 2 == 0 else 0) if esc in ("a", "b", "start") else DIR_MASK[BTN_TO_DIR[esc]]
                 drv = "ESC"; last_btn = esc; nav_dir = 0
             elif vbtn in BTN_TO_DIR:                          # VLM direction -> walk
-                nav_dir = BTN_TO_DIR[vbtn]; mask = DIR_MASK[nav_dir]; drv = "S2nav"
+                nav_dir = BTN_TO_DIR[vbtn]
+                if walker is not None:                        # intent EXECUTED: walker to a screen-edge target
+                    lsx, lsy = (link[0], link[1]) if link[0] >= 0 else (120, 80)
+                    mask = walker_dir(stack, *WALK_EDGE_PT[nav_dir](lsx, lsy))
+                    drv = "WALKnav"
+                else:
+                    mask = DIR_MASK[nav_dir]; drv = "S2nav"
             elif vbtn in ("a", "b", "start", "select"):      # VLM action -> tap
                 mask = BTN[vbtn] if step % 2 == 0 else 0; drv = "S2"; nav_dir = 0
             else:                                            # VLM wait (brief -- stuck_run climbs, escape takes over)
                 mask = 0; drv = "S2wait"; nav_dir = 0
 
-        if entered_game and drv != "MENU":                   # record the decision's outcome in the room log
-            mem.note(room, last_btn if drv != "SWEEP" else DIR_NAME[nav_dir], moving, step,
+        if entered_game and drv not in ("MENU", "GAMEOVER"):  # record the decision's outcome in the room log
+            mem.note(room, note_btn if note_btn is not None else last_btn, moving, step,
                      edge=sweep_edge)
         with lock:
             shared.update(frame=frame, det=(link, en, it), step=step,
-                          last_btn=last_btn, last_changed=moved_since_vlm, stuck=(stuck_run > 0 or escaping),
+                          last_btn=last_btn, last_changed=moved_since_vlm,
+                          stuck=(esc_lvl >= 1 or stuck_run > 0 or escaping),   # v2 fix: escalation IS stuck (jiggle no longer masks it)
                           brief=(mem.brief(room) if entered_game else ""),
                           receipts=(mem.receipts() if entered_game else []))
         for _ in range(FRAME_SKIP):
             core.set_keys(raw=mask); core.run_frame()
         stack = stack[1:] + [grab(img, w, h)]
         drv_counts[drv] = drv_counts.get(drv, 0) + 1
+        traj.append((lw[0], lw[1], drv))
+        _cx, _cy = camera(core) if tgt is not None else (0, 0)
         write_overlay(frame, link, en, it, drv,
                       {"nav": DIR_NAME[nav_dir], "n": cur_n, "btn": last_btn if nav_dir or vbtn in BTN else vbtn,
-                       "moved": moving,
+                       "moved": moving, "tgt": (tgt[0] - _cx, tgt[1] - _cy) if tgt is not None else None,
                        "subgoal": (f"[rooms:{mem.stats()['rooms_visited']} esc:{esc_lvl}] " if entered_game else "") + vsub}, step)
         if step and step % SEG == 0:
             core, img, w, h = new_core(core.save_raw_state())
@@ -322,8 +506,17 @@ def main():
     stop_flag.set()
     nf = len([f for f in os.listdir(FRAMES) if f.endswith(".jpg")])
     ms = mem.stats()
+    drv_names = sorted(set(d for _, _, d in traj))
+    drv_code = {d: i for i, d in enumerate(drv_names)}
+    np.savez_compressed(os.path.join(os.path.dirname(OUT), "traj.npz"),
+                        x=np.array([t[0] for t in traj], np.int32),
+                        y=np.array([t[1] for t in traj], np.int32),
+                        drv=np.array([drv_code[t[2]] for t in traj], np.uint8),
+                        drv_names=np.array(drv_names))
     print(f"FRAMES_DONE {nf} frames, {int(time.time()-t0)}s wall, vlm_calls={directive['n']}, final_room={room_cell(core)}, drivers={drv_counts} -> {FRAMES}", flush=True)
     print(f"MEM_STATS rooms_visited={ms['rooms_visited']} transitions={ms['transitions']} order={ms['order']}", flush=True)
+    for rm, hs in tgt_hist.items():
+        print(f"TGT_HIST room {rm}: {hs}", flush=True)
 
 
 if __name__ == "__main__":

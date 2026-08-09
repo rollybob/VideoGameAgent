@@ -1,0 +1,131 @@
+{
+ "arm": "greedy",
+ "state": "alttp_human-12",
+ "episodes": 24,
+ "seed": 500,
+ "reach1": 0.4583333333333333,
+ "reaches_mean": 1.0416666666666667,
+ "first_reach_med": 18.0,
+ "eps": [
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 32,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 18,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 7,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 8,
+   "steps": 600
+  },
+  {
+   "reaches": 2,
+   "first": 33,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 18,
+   "steps": 600
+  },
+  {
+   "reaches": 8,
+   "first": 10,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 2,
+   "first": 45,
+   "steps": 600
+  },
+  {
+   "reaches": 1,
+   "first": 10,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 2,
+   "first": 21,
+   "steps": 600
+  },
+  {
+   "reaches": 5,
+   "first": 32,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  },
+  {
+   "reaches": 0,
+   "first": null,
+   "steps": 600
+  }
+ ]
+}

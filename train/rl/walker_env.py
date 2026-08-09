@@ -55,6 +55,18 @@ _BLOB_OFF = [(dx, dy) for dy in range(-BLOB_R, BLOB_R + 1)
              for dx in range(-BLOB_R, BLOB_R + 1) if dx * dx + dy * dy <= BLOB_R * BLOB_R]
 
 
+def goal_channel(sx, sy):
+    """(H,W,1) uint8 goal channel with the disc at SCREEN pos (sx,sy), border-clamped
+    when off-screen so direction survives. Shared by the env (training) and the drive
+    agent (inference) -- one renderer, zero train/serve skew."""
+    sx = min(max(int(round(sx)), BLOB_R + 1), W - BLOB_R - 2)
+    sy = min(max(int(round(sy)), BLOB_R + 1), H - BLOB_R - 2)
+    ch = np.zeros((H, W, 1), np.uint8)
+    for dx, dy in _BLOB_OFF:
+        ch[sy + dy, sx + dx, 0] = 255
+    return ch
+
+
 class WalkerEnv(AlttpPpoEnv):
     def __init__(self, state_path=None, horizon=2400, frame_skip=FRAME_SKIP,
                  bank_dir=None):
@@ -97,15 +109,7 @@ class WalkerEnv(AlttpPpoEnv):
 
     def _goal_channel(self):
         cx, cy = float(u16(self._iw, CAM_X)), float(u16(self._iw, CAM_Y))
-        sx = int(round(self.goal[0] - cx))
-        sy = int(round(self.goal[1] - cy))
-        # off-screen target -> clamp the disc to the border: direction survives
-        sx = min(max(sx, BLOB_R + 1), W - BLOB_R - 2)
-        sy = min(max(sy, BLOB_R + 1), H - BLOB_R - 2)
-        ch = np.zeros((H, W, 1), np.uint8)
-        for dx, dy in _BLOB_OFF:
-            ch[sy + dy, sx + dx, 0] = 255
-        return ch
+        return goal_channel(self.goal[0] - cx, self.goal[1] - cy)
 
     def _obs13(self):
         return np.concatenate([self._stack(), self._goal_channel()], axis=-1)

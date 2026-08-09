@@ -27,9 +27,12 @@ No emulator imports -- pure bookkeeping, unit-testable standalone.
 from collections import defaultdict
 
 # Decisions-in-room thresholds. At ~7.5 decisions/s (FPS 15, VLM-paced loop is
-# still per-frame decisions): L1 after ~20s stuck, L2 after ~45s stuck.
+# still per-frame decisions): L1 after ~20s stuck, L2 after ~45s stuck, L3 after
+# ~2 minutes (>= 5 full sweep cycles refuted plain edge-probing -- braintest
+# 2026-08-09 showed 12.5k sweep decisions in one room achieve nothing more).
 L1_DECISIONS = 150
 L2_DECISIONS = 340
+L3_DECISIONS = 900
 SWEEP_BURST = 45          # decisions per edge-probe burst before rotating edges
 EDGES = ("south", "north", "west", "east")
 EDGE_DIR = {"south": "down", "north": "up", "west": "left", "east": "right"}
@@ -99,6 +102,8 @@ class RoomMemory:
 
     def escalation(self, cell):
         d = self.stuck_decisions(cell)
+        if d >= L3_DECISIONS:
+            return 3
         if d >= L2_DECISIONS:
             return 2
         if d >= L1_DECISIONS:
