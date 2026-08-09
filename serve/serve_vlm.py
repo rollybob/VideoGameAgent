@@ -44,10 +44,12 @@ Kept self-contained (prompt + button list inline) so the container needs no vga 
 from __future__ import annotations
 
 import base64
+import hashlib
 import io
 import json
 import os
 import re
+import threading
 import time
 
 import torch
@@ -81,6 +83,22 @@ SHARP_MODE = os.environ.get("SHARP_MODE", "0") not in ("0", "false", "False", ""
 # task under stochasticity - the mash<->paralysis instability we are trying to quantify.
 DO_SAMPLE = os.environ.get("DO_SAMPLE", "0") not in ("0", "false", "False", "")
 TEMP = float(os.environ.get("TEMP", "0.7"))
+
+# --- Over-current mitigation: gradual GPU load ramp (2026-08-07) ----------------------------
+# The Blackwell SoC over-current comparator (soctherm_oc, oc3 rail) trips on fast current
+# TRANSIENTS (di/dt), not average power: thor-oc-watch caught ~110 oc3 trips in ~84s at only
+# ~17W average during a VLM cold-start (2026-08-06), and dropping nvpmodel to 120W did NOT stop
+# them -- the budget caps sustained watts, the wrong axis. The fault is the idle->full occupancy
+# slam at a pinned max GPU clock. WARMUP runs a graduated ramp of dummy generations at startup so
+# the first real request is not that cold slam (and front-loads the cuBLAS/cuDNN autotune storm,
+# itself part of the cold-start current). Set WARMUP=0 to reproduce the burst for an A/B. KEEPWARM
+# (opt-in, default off) runs a light idle trickle while serving so mid-session idle->request steps
+# stay small -- targets the mid-session trips, which the startup ramp alone does not cover.
+WARMUP = os.environ.get("WARMUP", "1") not in ("0", "false", "False", "")
+WARMUP_GAP_S = float(os.environ.get("WARMUP_GAP_S", "0.4"))   # settle pause between ramp steps
+WARMUP_HOLD = int(os.environ.get("WARMUP_HOLD", "2"))         # full-size back-to-back holds at top
+KEEPWARM = os.environ.get("KEEPWARM", "0") not in ("0", "false", "False", "")
+KEEPWARM_IDLE_S = float(os.environ.get("KEEPWARM_IDLE_S", "1.5"))  # idle gap before a trickle fires
 
 
 def _pixel_kwargs() -> dict:
@@ -139,6 +157,12 @@ MENU_RULE = (
     "setup - the selection does not happen until you press A. Do NOT scroll the cursor back and "
     "forth (down then up then down): alternating directions makes zero progress. If you have "
     "already read the options, stop moving and press A on your chosen one."
+    " OBSERVE FIRST (this is the most common mistake): fill the \"highlighted\" field with the "
+    "EXACT option that is highlighted RIGHT NOW (the one in a different color / with the cursor), "
+    "BEFORE you choose a button. Then act on it: if that highlighted option is ALREADY the one "
+    "your goal needs, press A immediately - do NOT press any D-pad direction. Press a D-pad "
+    "direction ONLY when the option you want is NOT the one currently highlighted. Never keep "
+    "pressing down toward an option that is already highlighted."
 )
 
 
@@ -188,10 +212,24 @@ def _knowledge_lines(knowledge: list) -> list:
 def _instruction(goal: str, step: int, last_action: str,
                  last_changed=None, history=None, looping=False,
                  dialog_text="", already_read=False, subgoal="", progress="",
-                 mode="", skills=None, knowledge=None) -> str:
+                 mode="", skills=None, knowledge=None, committed="", task_phase="") -> str:
     lines = [f"Step {step}. This is the current screen."]
     if goal:
         lines.append(f"Objective: {goal}")
+    if task_phase:
+        # Durable, RAM-taught task-state phase directive (Task 07, 2026-07-06). The host has
+        # OBJECTIVELY determined (from a pixels-only cue it validated against the RAM oracle at
+        # train time -- e.g. the info-fee dialog that means the mission fee was paid == accepted)
+        # WHERE the agent is in the multi-step task, and asserts it AUTHORITATIVELY here. Unlike
+        # the sub-goal below (the model's own note, framed "may be stale"), this is GROUND TRUTH
+        # about task progress that the model cannot see from one frame: after accepting a mission
+        # the stateless agent forgets and re-tries to accept / wanders back into the pub. Placed
+        # ABOVE the sub-goal so it governs it: if the sub-goal contradicts the phase, the phase
+        # wins. It is durable by design (persists across scene changes / the scratchpad wipe),
+        # which is safe here precisely because it is set by an objective cue, not the model's
+        # belief. Empty (mechanism off / phase not yet advanced) -> this block is absent.
+        lines.append("TASK STATE (authoritative - the game state confirms this; trust it over "
+                     "your own sub-goal note below): " + str(task_phase))
     if INCLUDE_GOALS and subgoal:
         # PERCEPTION-FIRST framing. Feeding the model's own prior sub-goal back as fact
         # anchored it: it kept "confirming English" for 158 steps while the screen had long
@@ -206,6 +244,23 @@ def _instruction(goal: str, step: int, last_action: str,
                      "sub-goal.")
     elif INCLUDE_GOALS:
         lines.append("You have no sub-goal yet - decide one from the objective and what you see.")
+    if committed:
+        # Intent-persistence commitment (Task 01, 2026-07-04). The agent has relevant learned
+        # knowledge that implies a specific move, but on the previous step it reflexively fell
+        # back on the per-frame visual prior (e.g. walking the map) instead. The host has locked
+        # this directive as FOREGROUND for a few steps so the plan survives the frames that do
+        # not immediately confirm progress. This is the DELIBERATE anti-reflex override; unlike
+        # the sub-goal above it is NOT hedged with "trust the screen". It is still self-limiting:
+        # the host clears it the moment the screen materially changes (a menu opens) or the short
+        # window expires, so it cannot zombie past its purpose.
+        lines.append(
+            "COMMITTED PLAN (do this NOW - it OVERRIDES the sub-goal note above): you recently "
+            "learned something about THIS game that applies right here, and you have committed to "
+            "acting on it for the next few steps: " + str(committed) + ". Choose the button that "
+            "carries out this plan THIS step. Do NOT fall back to walking around or repeating your "
+            "reflex action just because the screen looks unchanged - following the plan is exactly "
+            "what will change it. Only stop if a menu or new screen is already open (then the plan "
+            "worked - act on what you now see).")
     lines += _history_lines(history or [])
     if last_action:
         if last_changed is None:
@@ -236,6 +291,28 @@ def _instruction(goal: str, step: int, last_action: str,
     # planning (perception-first, and it keys which skills it gets next step); then the goal
     # fields so it settles its plan before it commits to a button (a light chain-of-thought).
     fields = ['"mode": "<one of: ' + " ".join(MODES) + ' - what kind of screen this is>"']
+    # Perception-first for menus (2026-07-04): force the model to NAME the currently-highlighted
+    # option BEFORE it picks a button. The model CAN read the highlight when asked (verified via
+    # /read: 3/3), but in the act-loop it executed its carried plan without looking and pressed
+    # down while the target was already highlighted. Placing this early in the ordered schema
+    # makes it a chain-of-thought observation the button choice is then conditioned on.
+    fields.append('"highlighted": "<if this screen is a MENU or option-list, the EXACT text of '
+                  'the option highlighted RIGHT NOW - the one row drawn in a DIFFERENT COLOR or '
+                  'with the cursor/arrow on it. Report ONLY what you literally SEE highlighted, '
+                  'NOT the option you want or plan to pick; the highlighted row is often NOT your '
+                  'target yet. A freshly opened list usually starts highlighting its TOP item. '
+                  'Otherwise empty string>"')
+    # Objective scene descriptor (Task 03B, 2026-07-05). A short PERCEPTION-first phrase naming
+    # what is on screen (setting, any menu/window and its visible options, key entities). It is a
+    # RETRIEVAL-ROUTING key: the host carries it forward one step and folds it into the context
+    # that selects which learned facts/skills reach the next prompt, so routing keys on scene
+    # CONTENT instead of a bare one-word mode. Placed early (after mode/highlighted) so it is a
+    # genuine observation the action is conditioned on. STRICTLY objective - NOT the goal/plan -
+    # to avoid the echo/anchor bug: it is a host-side key, never shown back as an authoritative
+    # fact. Parsed defensively (capped; missing -> "").
+    fields.append('"scene": "<up to ~12 words: OBJECTIVELY describe what is on screen RIGHT NOW - '
+                  'the setting, any menu/window name and its visible options, and the key entities '
+                  'or text. Describe only what you SEE; do NOT state your goal or plan>"')
     if INCLUDE_KNOWLEDGE:
         # Detection flag for tutorial-learning: the host reads+distills+stores when true.
         # Judge the CURRENT screen ONLY (ignore your goal/history - priming makes the model
@@ -265,6 +342,12 @@ def _instruction(goal: str, step: int, last_action: str,
 app = Flask(__name__)
 _model = None
 _processor = None
+# All GPU generation is serialized behind this lock so the optional keep-warm idle trickle can
+# never run a forward pass concurrently with a real request -- two generate() calls on one model
+# at once is unsafe and would DOUBLE the instantaneous current, the opposite of the goal. With
+# Flask threaded=False and keep-warm off it is uncontended, so serving behavior is unchanged.
+_infer_lock = threading.Lock()
+_last_infer = 0.0  # time.monotonic() of the last completed generation (keep-warm idle gating)
 
 
 def _load():
@@ -281,10 +364,21 @@ def _load():
     print(f"[serve] model ready in {time.time() - t0:.1f}s", flush=True)
 
 
+def _locked_generate(**kwargs):
+    """Every GPU generation goes through here so the optional keep-warm trickle can never overlap
+    a real request's forward pass (see _infer_lock). Records completion time so keep-warm can tell
+    whether the GPU has genuinely been idle. Free (uncontended) when keep-warm is off."""
+    global _last_infer
+    with _infer_lock:
+        out = _model.generate(**kwargs)
+    _last_infer = time.monotonic()
+    return out
+
+
 def _parse_action(text: str) -> dict:
     """Extract {button, repeats, reason, subgoal, progress, mode} from the model's text."""
     out = {"button": "wait", "repeats": 1, "reason": "", "subgoal": "", "progress": "",
-           "mode": "", "is_tutorial": False}
+           "mode": "", "is_tutorial": False, "highlighted": "", "scene": ""}
     m = re.search(r"\{.*\}", text, re.DOTALL)
     if m:
         try:
@@ -296,6 +390,9 @@ def _parse_action(text: str) -> dict:
             except (TypeError, ValueError):
                 out["repeats"] = 1
             out["reason"] = str(obj.get("reason", ""))[:200]
+            out["highlighted"] = str(obj.get("highlighted", ""))[:60]
+            # Objective scene descriptor (Task 03B): retrieval-routing key, capped defensively.
+            out["scene"] = str(obj.get("scene", ""))[:120]
             out["subgoal"] = str(obj.get("subgoal", ""))[:120]
             out["progress"] = str(obj.get("progress", ""))[:160]
             md = str(obj.get("mode", "")).strip().lower()
@@ -338,7 +435,39 @@ def read():
     inputs = _processor(text=[chat], images=[img], return_tensors="pt").to(_model.device)
     t0 = time.time()
     with torch.no_grad():
-        gen = _model.generate(**inputs, max_new_tokens=max_tok, do_sample=False)
+        gen = _locked_generate(**inputs, max_new_tokens=max_tok, do_sample=False)
+    trimmed = [o[len(i):] for i, o in zip(inputs.input_ids, gen)]
+    text = _processor.batch_decode(trimmed, skip_special_tokens=True)[0]
+    return jsonify({"text": text, "latency_s": round(time.time() - t0, 3)})
+
+
+@app.post("/complete")
+def complete():
+    """Text-only completion over the local VLM - NO image, NO action-tool forcing. This is the
+    self-reflection channel for the experiential loop (Task 03, 2026-07-05): mine_insights.py
+    posts the objective success/fail contrast (pure text) and the SAME model that plays the game
+    extracts transferable facts from it (ExpeL-style self-improvement), instead of an external
+    Claude teacher. Qwen3-VL is an image-text-to-text model but generates fine with no image in
+    the message, so the processor is called text-only here.
+
+    Always GREEDY (do_sample=False) regardless of DO_SAMPLE - reflection must be reproducible,
+    like /read. Keep the caller's prompt simple and parse defensively: the 8B has failed
+    structured-output schemas before, so we do not force JSON here; the caller salvages it.
+        POST /complete {prompt, system?, max_new_tokens?} -> {text, latency_s}"""
+    data = request.get_json(force=True)
+    prompt = data.get("prompt", "")
+    system_text = data.get("system", "You are a careful, literal assistant. Answer exactly what "
+                           "is asked and output nothing else.")
+    max_tok = int(data.get("max_new_tokens", 256))
+    messages = [
+        {"role": "system", "content": [{"type": "text", "text": system_text}]},
+        {"role": "user", "content": [{"type": "text", "text": prompt}]},
+    ]
+    chat = _processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = _processor(text=[chat], return_tensors="pt").to(_model.device)
+    t0 = time.time()
+    with torch.no_grad():
+        gen = _locked_generate(**inputs, max_new_tokens=max_tok, do_sample=False)
     trimmed = [o[len(i):] for i, o in zip(inputs.input_ids, gen)]
     text = _processor.batch_decode(trimmed, skip_special_tokens=True)[0]
     return jsonify({"text": text, "latency_s": round(time.time() - t0, 3)})
@@ -358,6 +487,8 @@ def health():
         "temp": TEMP,
         "max_new_tokens": MAX_NEW_TOKENS,
         "pixel_budget": _pixel_kwargs() or "model-default",
+        "warmup": WARMUP,
+        "keepwarm": KEEPWARM,
     })
 
 
@@ -372,7 +503,8 @@ def act():
         dialog_text=data.get("dialog_text", ""), already_read=data.get("already_read", False),
         subgoal=data.get("subgoal", ""), progress=data.get("progress", ""),
         mode=data.get("mode", ""), skills=data.get("skills"),
-        knowledge=data.get("knowledge"))
+        knowledge=data.get("knowledge"), committed=data.get("committed", ""),
+        task_phase=data.get("task_phase", ""))
 
     system_text = SYSTEM_PROMPT + (MENU_RULE if SHARP_MODE else "")
     messages = [
@@ -387,8 +519,22 @@ def act():
 
     t0 = time.time()
     with torch.no_grad():
-        gen_kw = {"do_sample": True, "temperature": TEMP} if DO_SAMPLE else {"do_sample": False}
-        gen = _model.generate(**inputs, max_new_tokens=MAX_NEW_TOKENS, **gen_kw)
+        if DO_SAMPLE:
+            # REPRODUCIBLE sampling (2026-07-04): seed the RNG from the exact input (image +
+            # full prompt) so the same state yields the same action and whole episodes replay
+            # identically -> clean A/B, while temp>0 keeps the exploration a weak policy needs.
+            # (Pure greedy is reproducible too but gets DETERMINISTICALLY STUCK -- observed the
+            # same day: greedy failed the mission-accept rung that sampling clears.) Determinism
+            # of the model is thus a function of its inputs, which is exactly what eval wants.
+            # seed_salt (default "") lets a caller draw N reproducible-but-distinct trajectories
+            # from the same state -> multi-seed ladder A/B. "" is a no-op, preserving the exact
+            # un-salted seed for every existing caller.
+            seed = int(hashlib.sha256((data["image_b64"] + chat + data.get("seed_salt", "")).encode()).hexdigest()[:15], 16)
+            torch.manual_seed(seed)
+            gen_kw = {"do_sample": True, "temperature": TEMP}
+        else:
+            gen_kw = {"do_sample": False}
+        gen = _locked_generate(**inputs, max_new_tokens=MAX_NEW_TOKENS, **gen_kw)
     trimmed = [o[len(i):] for i, o in zip(inputs.input_ids, gen)]
     text = _processor.batch_decode(trimmed, skip_special_tokens=True)[0]
     latency = round(time.time() - t0, 3)
@@ -399,6 +545,82 @@ def act():
     return jsonify(action)
 
 
+# Neutral gray frames of increasing size + increasing decode length: current approaches its peak
+# in bounded steps instead of one idle->full slam. Ends at ~2x GBA size and the full token ceiling;
+# nominal sizes may be resized by the processor, but max_new_tokens rises monotonically so the
+# decode-side current ramps regardless. Runs the REAL /act path so the exact kernels initialize here.
+_WARMUP_RAMP = [
+    ((48, 32), 2), ((96, 64), 4), ((160, 108), 8), ((240, 160), 16),
+    ((320, 214), 32), ((480, 320), 64), ((480, 320), 128),
+]
+
+
+def _warmup_once(size, max_new_tokens):
+    w, h = size
+    img = Image.new("RGB", (w, h), (128, 128, 128))
+    messages = [
+        {"role": "system", "content": [{"type": "text", "text": SYSTEM_PROMPT}]},
+        {"role": "user", "content": [
+            {"type": "image", "image": img},
+            {"type": "text", "text": "Warm-up; reply with one word."},
+        ]},
+    ]
+    chat = _processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    inputs = _processor(text=[chat], images=[img], return_tensors="pt").to(_model.device)
+    with torch.no_grad():
+        _locked_generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False)
+    torch.cuda.synchronize()  # force each step to finish before the pause, so the ramp is real
+
+
+def _warmup():
+    """Gradual GPU load ramp to avoid the cold-start over-current trip (see WARMUP note). Runs the
+    real /act code path at increasing sizes so cuBLAS/cuDNN init and the first dense matmuls happen
+    here, not on the first live request. Best-effort: a step failure is logged, never fatal."""
+    if not WARMUP:
+        print("[serve] warmup DISABLED (WARMUP=0)", flush=True)
+        return
+    t0 = time.time()
+    print(f"[serve] warmup: {len(_WARMUP_RAMP)}-step ramp + {WARMUP_HOLD} hold(s), gap={WARMUP_GAP_S}s",
+          flush=True)
+    for i, (size, mnt) in enumerate(_WARMUP_RAMP):
+        try:
+            _warmup_once(size, mnt)
+            print(f"[serve]   warmup {i + 1}/{len(_WARMUP_RAMP)}: {size[0]}x{size[1]}, {mnt} tok",
+                  flush=True)
+        except Exception as e:  # noqa: BLE001 - warm-up must never block serving
+            print(f"[serve]   warmup {i + 1} skipped: {e}", flush=True)
+        time.sleep(WARMUP_GAP_S)
+    # Trailing sustained holds at full size, no gap: keep the top of the ramp contiguous so the
+    # regulator settles at peak rather than relaxing and re-slamming on the first real request.
+    top_size, top_tok = _WARMUP_RAMP[-1]
+    for _ in range(max(0, WARMUP_HOLD)):
+        try:
+            _warmup_once(top_size, top_tok)
+        except Exception as e:  # noqa: BLE001
+            print(f"[serve]   warmup hold skipped: {e}", flush=True)
+    print(f"[serve] warmup done in {time.time() - t0:.1f}s", flush=True)
+
+
+def _keepwarm_loop():
+    """Opt-in idle trickle (KEEPWARM=1): when no generation has run for KEEPWARM_IDLE_S, run one
+    tiny generation so the GPU never fully collapses to idle, keeping the next real request's
+    idle->full step (and its di/dt) small. Serialized behind _infer_lock; daemon thread; errors
+    are logged and the loop continues. Targets the mid-session trips the startup ramp cannot."""
+    print(f"[serve] keep-warm idle trickle ON (idle > {KEEPWARM_IDLE_S}s)", flush=True)
+    while True:
+        try:
+            time.sleep(KEEPWARM_IDLE_S)
+            if time.monotonic() - _last_infer < KEEPWARM_IDLE_S:
+                continue  # a real request ran recently -- no trickle needed
+            _warmup_once((160, 108), 2)
+        except Exception as e:  # noqa: BLE001 - keep-warm must never crash serving
+            print(f"[serve] keepwarm error (continuing): {e}", flush=True)
+            time.sleep(1.0)
+
+
 if __name__ == "__main__":
     _load()
+    _warmup()
+    if KEEPWARM:
+        threading.Thread(target=_keepwarm_loop, daemon=True, name="keepwarm").start()
     app.run(host="127.0.0.1", port=PORT, threaded=False)

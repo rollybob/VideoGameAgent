@@ -1,0 +1,1300 @@
+{
+  "summary": {
+    "arm": "arbiter",
+    "episodes": 20,
+    "collect_rate": 0.95,
+    "keys_per_ep": 0.95,
+    "collected_by_interject": 9,
+    "median_first_key": 102.0,
+    "mean_damage": 0.0,
+    "mean_s2_calls": 10.45,
+    "wall_secs": 248.5
+  },
+  "episodes": [
+    {
+      "keys": 1,
+      "first_key_step": 166,
+      "damage": 0.0,
+      "s2_calls": 9,
+      "s2_secs": 9.128112554550171,
+      "interjects": 1,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 164,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 204,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 244,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 254,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 294,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-00.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 156,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 12.343860149383545,
+      "interjects": 11,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 54,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 64,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 74,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 94,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 104,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 114,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 124,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 134,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 144,
+          "vis": true,
+          "dir": "down"
+        }
+      ],
+      "state": "keydrop-01.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 123,
+      "damage": 0.0,
+      "s2_calls": 10,
+      "s2_secs": 10.009440422058105,
+      "interjects": 3,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 24,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 64,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 74,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 114,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 154,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 194,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 234,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 274,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-02.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 13,
+      "damage": 0.0,
+      "s2_calls": 9,
+      "s2_secs": 8.965184926986694,
+      "interjects": 2,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 24,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 64,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 104,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 144,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 184,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 224,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 264,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-03.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 20,
+      "damage": 0.0,
+      "s2_calls": 8,
+      "s2_secs": 7.89505410194397,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 164,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 204,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 244,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 284,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-05.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 137,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 12.415932416915894,
+      "interjects": 12,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 24,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 34,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 44,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 54,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 64,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 74,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 94,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 104,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 114,
+          "vis": true,
+          "dir": "up-left"
+        }
+      ],
+      "state": "keydrop-06.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 96,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 12.080267429351807,
+      "interjects": 8,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 24,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 64,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 104,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 144,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 184,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 194,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 204,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 214,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 224,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 234,
+          "vis": true,
+          "dir": "down"
+        }
+      ],
+      "state": "keydrop-07.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 12,
+      "damage": 0.0,
+      "s2_calls": 9,
+      "s2_secs": 8.9978346824646,
+      "interjects": 1,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 134,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 174,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 214,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 254,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 294,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-08.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 27,
+      "damage": 0.0,
+      "s2_calls": 8,
+      "s2_secs": 7.921322584152222,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 164,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 204,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 244,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 284,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-09.state"
+    },
+    {
+      "keys": 0,
+      "first_key_step": null,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 12.442333221435547,
+      "interjects": 12,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 24,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 34,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 44,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 54,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 64,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 74,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 94,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 104,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 114,
+          "vis": true,
+          "dir": "up-left"
+        }
+      ],
+      "state": "keydrop-10.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 139,
+      "damage": 0.0,
+      "s2_calls": 10,
+      "s2_secs": 10.025378227233887,
+      "interjects": 3,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 94,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 134,
+          "vis": true,
+          "dir": "down-left"
+        },
+        {
+          "step": 144,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 184,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 224,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 234,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 274,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-11.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 206,
+      "damage": 0.0,
+      "s2_calls": 9,
+      "s2_secs": 8.983275651931763,
+      "interjects": 1,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 164,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 204,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 214,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 254,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 294,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-12.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 33,
+      "damage": 0.0,
+      "s2_calls": 11,
+      "s2_secs": 11.09128475189209,
+      "interjects": 4,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 24,
+          "vis": true,
+          "dir": "down-left"
+        },
+        {
+          "step": 34,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 164,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 204,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 244,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 284,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-13.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 165,
+      "damage": 0.0,
+      "s2_calls": 9,
+      "s2_secs": 9.04981255531311,
+      "interjects": 2,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 164,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 174,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 184,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 224,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 264,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-15.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 145,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 12.421563625335693,
+      "interjects": 12,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 24,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 34,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 44,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 54,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 64,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 74,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 94,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 104,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 114,
+          "vis": true,
+          "dir": "up-left"
+        }
+      ],
+      "state": "keydrop-16.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 102,
+      "damage": 0.0,
+      "s2_calls": 9,
+      "s2_secs": 8.980712652206421,
+      "interjects": 1,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 124,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 164,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 174,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 214,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 254,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 294,
+          "vis": false,
+          "dir": "none"
+        }
+      ],
+      "state": "keydrop-17.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 75,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 12.141427040100098,
+      "interjects": 11,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "down-right"
+        },
+        {
+          "step": 24,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 64,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 74,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 94,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 104,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 114,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 124,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 134,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 144,
+          "vis": true,
+          "dir": "down"
+        }
+      ],
+      "state": "keydrop-18.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 18,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 12.02851915359497,
+      "interjects": 12,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "up-left"
+        },
+        {
+          "step": 14,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 24,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 34,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 44,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 54,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 64,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 74,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 94,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 104,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 114,
+          "vis": true,
+          "dir": "down"
+        }
+      ],
+      "state": "keydrop-19.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 139,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 11.962112188339233,
+      "interjects": 8,
+      "collected_by_interject": true,
+      "consults": [
+        {
+          "step": 4,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 14,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 54,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 94,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 134,
+          "vis": true,
+          "dir": "up-right"
+        },
+        {
+          "step": 144,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 184,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 194,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 204,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 214,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 224,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 234,
+          "vis": true,
+          "dir": "down"
+        }
+      ],
+      "state": "keydrop-20.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 50,
+      "damage": 0.0,
+      "s2_calls": 12,
+      "s2_secs": 11.871285915374756,
+      "interjects": 10,
+      "collected_by_interject": false,
+      "consults": [
+        {
+          "step": 4,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 44,
+          "vis": false,
+          "dir": "none"
+        },
+        {
+          "step": 84,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 94,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 104,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 114,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 124,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 134,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 144,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 154,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 164,
+          "vis": true,
+          "dir": "down"
+        },
+        {
+          "step": 174,
+          "vis": true,
+          "dir": "down"
+        }
+      ],
+      "state": "keydrop-21.state"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "params_M": 0.11,
+  "fps_bs1": 2754.2,
+  "heldout": {
+    "link@4": 87.4,
+    "link@8": 91.4,
+    "enemy@4": 96.1,
+    "enemy@8": 99.2,
+    "enemy_n": 1677,
+    "item@4": 87.4,
+    "item@8": 87.4,
+    "item_n": 772
+  },
+  "train": {
+    "link@4": 95.0,
+    "link@8": 96.1,
+    "enemy@4": 98.8,
+    "enemy@8": 99.1,
+    "enemy_n": 2066,
+    "item@4": 100.0,
+    "item@8": 100.0,
+    "item_n": 1440
+  }
+}

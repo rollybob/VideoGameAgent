@@ -83,7 +83,7 @@ class VlmAgentPolicy:
     name = "vlm"
 
     def __init__(self, goal: str = "", url: str = "http://127.0.0.1:8077", upscale: int = 3,
-                 game: str = "", enable_tutor: bool = False):
+                 game: str = "", enable_tutor: bool = False, knowledge_path: str = ""):
         import cv2
         import numpy as np
         from vga.core.contract import GameState
@@ -93,13 +93,19 @@ class VlmAgentPolicy:
         self._np = np
         self._GameState = GameState
         knowledge = tutor = None
+        # Retrieval-only knowledge: load a PRE-POPULATED KnowledgeStore (e.g. facts MINED from
+        # past trajectories by mine_insights.py) so the agent's learned experience reaches the
+        # /act prompt WITHOUT running the tutor. This decouples "use what was learned" from
+        # "learn from tutorials now" -- the experiential-learning loop (2026-07-04 day3) writes
+        # the store offline and the agent reads it here. enable_tutor still adds live learning.
+        if knowledge_path or enable_tutor:
+            from vga.reason.knowledge import KnowledgeStore
+            knowledge = KnowledgeStore(path=knowledge_path or None)
         if enable_tutor:
             # Tutorial-learning ON: persistent KnowledgeStore + TutorReader. upscale=1 because
             # act() already upscales the frame before it reaches the plugin, so the frames the
             # plugin accumulates are ALREADY display-resolution - upscaling again would distort.
-            from vga.reason.knowledge import KnowledgeStore
             from vga.reason.tutor import TutorReader
-            knowledge = KnowledgeStore()
             tutor = TutorReader(url=url, knowledge=knowledge, upscale=1)
         self.plugin = VlmPlugin(LocalVlmReasoner(url=url), goal=goal, game=game,
                                 knowledge=knowledge, tutor=tutor)
@@ -127,6 +133,32 @@ class VlmAgentPolicy:
         # loop's job in the live runner. Keep the mode + tutorial signals for the step record.
         return btn, int(getattr(action, "repeats", 1) or 1), {
             "mode": meta.get("mode", ""), "reason": meta.get("reason", ""),
+            # subgoal + scaffold + stage: without these the bench records WHAT the agent did
+            # but not WHY, so we cannot tell a perception gap from an execution gap, nor whether
+            # a forced-commit scaffold (not the model) chose the button (rescue day 2 diagnosis).
+            "subgoal": meta.get("subgoal", ""),
+            "highlighted": meta.get("highlighted", ""),
+            # Task 03B: the objective scene descriptor + the exact retrieval context it produced,
+            # so a trajectory shows whether the descriptor enriched the routing key (vs. a bare
+            # "overworld") and thereby re-armed the Task-01 commit on the grown store.
+            "scene": meta.get("scene", ""),
+            "retrieval_context": meta.get("retrieval_context", ""),
+            "commit_scaffold": meta.get("commit_scaffold", ""),
+            # Intent-persistence commit (Task 01): commit_set = the directive locked THIS step
+            # (only on the step it fires); commit_active = steps_left of an active commitment.
+            # Together they show the mechanism firing and persisting across the revert frames.
+            "commit_set": meta.get("commit_set", ""),
+            "commit_active": meta.get("commit_active", None),
+            # Task 07 durable task-state phase: the current phase every step, and the objective
+            # cue on the step it latched (accept->travel). Lets the readout show WHEN the pixels-
+            # only transition was detected vs the RAM funds-drop, and that the directive was live.
+            "phase": meta.get("phase", ""),
+            "phase_latched": meta.get("phase_latched"),
+            # Anti-freeze escape (2026-07-06): {"button","streak"} on any step the override fired
+            # (screen static >= FREEZE_K, injected a novel input). Makes the shipped mechanism
+            # observable in the trajectory so a readout can count fires + confirm escapes.
+            "anti_freeze": meta.get("anti_freeze"),
+            "stage": meta.get("stage_advanced_to", None),
             "is_tutorial": bool(meta.get("is_tutorial")),
             "tutorial_learned": meta.get("tutorial_learned")}
 
@@ -137,18 +169,20 @@ class VlmAgentPolicy:
         self.plugin.reset()
 
 
-def make_policy(kind: str, goal: str, url: str, game: str = "", enable_tutor: bool = False):
+def make_policy(kind: str, goal: str, url: str, game: str = "", enable_tutor: bool = False,
+                knowledge_path: str = ""):
     if kind == "random":
         return RandomPolicy()
     if kind == "vlm":
-        return VlmAgentPolicy(goal=goal, url=url, game=game, enable_tutor=enable_tutor)
+        return VlmAgentPolicy(goal=goal, url=url, game=game, enable_tutor=enable_tutor,
+                              knowledge_path=knowledge_path)
     raise ValueError(f"unknown policy '{kind}'")
 
 
 def rollout(rom: str, steps: int, policy_kind: str, out_dir: str,
             goal: str = "", url: str = "http://127.0.0.1:8077",
             hold: int = 6, then: int = 30, load_state: str = "",
-            enable_tutor: bool = False, task: str = "") -> dict:
+            enable_tutor: bool = False, task: str = "", knowledge_path: str = "") -> dict:
     # `then` (settle frames after each press) was 8 until 2026-07-03: FFTA UI boxes
     # ignore input for ~30 frames while animating in, so at then=8 an agent's press on a
     # freshly opened menu/confirm was EATEN (verified deterministically: the golden
@@ -169,7 +203,7 @@ def rollout(rom: str, steps: int, policy_kind: str, out_dir: str,
     os.makedirs(os.path.join(out_dir, "frames"), exist_ok=True)
     steps_path = os.path.join(out_dir, "steps.jsonl")
     policy = make_policy(policy_kind, goal, url, game=os.path.basename(rom),
-                         enable_tutor=enable_tutor)
+                         enable_tutor=enable_tutor, knowledge_path=knowledge_path)
 
     prev_state = None
     cum = 0.0
@@ -210,6 +244,21 @@ def rollout(rom: str, steps: int, policy_kind: str, out_dir: str,
                 "state": state, "next_state": new_state,
                 "reward": round(r, 3), "cum_reward": round(cum, 3),
                 "mode": pmeta.get("mode", ""),
+                "reason": pmeta.get("reason", ""),
+                "subgoal": pmeta.get("subgoal", ""),
+                "highlighted": pmeta.get("highlighted", ""),
+                # Task 03B: the objective scene descriptor + the exact retrieval context it built,
+                # so the trajectory shows whether the descriptor enriched the routing key (vs. a
+                # bare "overworld") and thereby re-armed the commit on the grown store.
+                "scene": pmeta.get("scene", ""),
+                "retrieval_context": pmeta.get("retrieval_context", ""),
+                "commit_scaffold": pmeta.get("commit_scaffold", ""),
+                "commit_set": pmeta.get("commit_set", ""),
+                "commit_active": pmeta.get("commit_active"),
+                # Task 07 durable task-state phase + the objective latch cue (see act()).
+                "phase": pmeta.get("phase", ""),
+                "phase_latched": pmeta.get("phase_latched"),
+                "stage": pmeta.get("stage"),
                 "phash": h_before, "changed": changed,
                 "checkpoints": cps,
                 "is_tutorial": pmeta.get("is_tutorial", False),
@@ -247,6 +296,9 @@ def main():
     ap.add_argument("--learn-tutorials", action="store_true",
                     help="enable tutorial-learning (KnowledgeStore + TutorReader): detect "
                          "instructional screens, distill facts, retrieve them into the prompt")
+    ap.add_argument("--knowledge", default="", help="path to a pre-populated KnowledgeStore "
+                    "json (facts mined from past trajectories) to RETRIEVE into the prompt, "
+                    "without running the tutor. The experiential-learning read path.")
     args = ap.parse_args()
 
     goal = args.goal
@@ -259,7 +311,8 @@ def main():
           f"steps={args.steps} goal={goal!r} -> {out}", flush=True)
     summary = rollout(args.rom, args.steps, args.policy, out, goal=goal,
                       url=args.url, hold=args.hold, then=args.then,
-                      load_state=args.load_state, enable_tutor=args.learn_tutorials)
+                      load_state=args.load_state, enable_tutor=args.learn_tutorials,
+                      knowledge_path=args.knowledge)
     print("[rollout] done:", json.dumps(summary), flush=True)
 
 

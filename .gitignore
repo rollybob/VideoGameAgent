@@ -88,3 +88,9 @@ train/ocr/models/
 train/perception/mode_data/
 train/ram/*.state
 train/ram/smoke_frame.png
+
+# Scratch/underscore-prefixed debug images and scratch dirs (2026-08-09)
+_*.png
+**/_*.png
+train/rl/scratch/
+train/rl/distill_data/

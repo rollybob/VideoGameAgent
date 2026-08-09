@@ -1,0 +1,22 @@
+{
+  "r2_chain": {
+    "n": 60,
+    "chain_complete": 0.38333333333333336,
+    "eps_with_kill": 0.4666666666666667,
+    "collect_given_kill": 0.8214285714285714,
+    "keys_per_ep": 0.4
+  },
+  "r1_chain_concurrent": {
+    "n": 60,
+    "chain_complete": 0.13333333333333333,
+    "eps_with_kill": 0.3,
+    "collect_given_kill": 0.4444444444444444,
+    "keys_per_ep": 0.18333333333333332
+  },
+  "far_guard": {
+    "rate": 0.7083333333333334,
+    "n": 120,
+    "ok": false
+  },
+  "verdict": "PARTIAL+FAR_GUARD_FAILED"
+}

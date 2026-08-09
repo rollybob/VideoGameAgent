@@ -1,0 +1,9 @@
+{
+  "successes": 0,
+  "episodes": 12,
+  "fails": {
+    "no_kill": 0,
+    "no_collect": 12,
+    "death": 0
+  }
+}

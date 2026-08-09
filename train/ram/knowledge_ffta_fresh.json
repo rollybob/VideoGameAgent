@@ -1,0 +1,47 @@
+[
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Kids with the highest \"speed\" move first.",
+    "text": "Prioritize increasing your character's \"speed\" stat to ensure they act before others in turn-based battles.",
+    "source": "learned",
+    "confidence": 0.6,
+    "uses": 85,
+    "created": 1783207183.6939797
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "When the menu isn't",
+    "text": "Press B when the menu isn't up to see your move range before acting.",
+    "source": "learned",
+    "confidence": 0.6,
+    "uses": 19,
+    "created": 1783208826.661406
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Choose \"Snowball\"",
+    "text": "To throw a snowball, select \"Snowball\" from the \"Action\" menu.",
+    "source": "learned",
+    "confidence": 0.6,
+    "uses": 15,
+    "created": 1783208861.972921
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Repeat lesson?",
+    "text": "If you select \u201cNo,\u201d you will not rewatch the tutorial, so choose only if you genuinely need a refresher.",
+    "source": "learned",
+    "confidence": 0.6,
+    "uses": 0,
+    "created": 1783208988.6429808
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "You can see help for",
+    "text": "To access help for any command, select it and press SELECT.",
+    "source": "learned",
+    "confidence": 0.6,
+    "uses": 0,
+    "created": 1783209042.0538015
+  }
+]

@@ -31,5 +31,7 @@ exec docker run --rm --runtime nvidia --network host \
   -v "$SRV_DIR/serve_vlm.py":/srv/serve_vlm.py:ro \
   -e MODEL_DIR=/models -e PORT="$PORT" -e SHARP_MODE="${SHARP_MODE:-0}" \
   -e DO_SAMPLE="${DO_SAMPLE:-0}" -e TEMP="${TEMP:-0.7}" \
+  -e WARMUP="${WARMUP:-1}" -e WARMUP_GAP_S="${WARMUP_GAP_S:-0.4}" -e WARMUP_HOLD="${WARMUP_HOLD:-2}" \
+  -e KEEPWARM="${KEEPWARM:-0}" -e KEEPWARM_IDLE_S="${KEEPWARM_IDLE_S:-1.5}" \
   --name vga-vlm-server \
   "$IMAGE"

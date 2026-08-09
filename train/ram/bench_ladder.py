@@ -43,6 +43,8 @@ def main():
     ap.add_argument("--out-root", default="")
     ap.add_argument("--task", default="", help="oracle checkpoint ladder to score "
                     "(e.g. 'naming'); empty = the oracle's default task")
+    ap.add_argument("--knowledge", default="", help="path to a pre-populated KnowledgeStore "
+                    "json (facts mined from past trajectories) to retrieve into the prompt")
     args = ap.parse_args()
 
     goal = args.goal
@@ -64,7 +66,7 @@ def main():
     for ep in range(args.episodes):
         ep_dir = os.path.join(out_root, f"ep_{ep:02d}")
         rollout(rom, args.steps, args.policy, ep_dir, goal=goal, url=args.url,
-                load_state=state, task=args.task)
+                load_state=state, task=args.task, knowledge_path=args.knowledge)
         a = analyze(ep_dir)
         ladder = a.get("ladder") or {}
         rung = ladder.get("furthest")

@@ -1,0 +1,486 @@
+{
+  "base": [
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 226,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 0,
+      "first_kill04_step": 575,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 285,
+      "collected_after_kill": true,
+      "delay": 71
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 167,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 0,
+      "first_kill04_step": 280,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 278,
+      "collected_after_kill": true,
+      "delay": 53
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 320,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    }
+  ],
+  "distilled": [
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 397,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 0,
+      "first_kill04_step": 109,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 238,
+      "collected_after_kill": true,
+      "delay": 33
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 226,
+      "collected_after_kill": true,
+      "delay": 27
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 252,
+      "collected_after_kill": true,
+      "delay": 48
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 0,
+      "first_kill04_step": 612,
+      "collected_after_kill": false,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 1,
+      "kills_04": 1,
+      "keys": 1,
+      "first_kill04_step": 316,
+      "collected_after_kill": true,
+      "delay": 50
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    },
+    {
+      "kills": 0,
+      "kills_04": 0,
+      "keys": 0,
+      "first_kill04_step": null,
+      "collected_after_kill": null,
+      "delay": null
+    }
+  ]
+}

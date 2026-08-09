@@ -1,0 +1,235 @@
+{
+  "summary": {
+    "arm": "s1",
+    "episodes": 20,
+    "collect_rate": 0.75,
+    "keys_per_ep": 0.75,
+    "collected_by_interject": 0,
+    "median_first_key": 119.0,
+    "mean_damage": 0.0,
+    "mean_s2_calls": 0.0,
+    "wall_secs": 38.5
+  },
+  "episodes": [
+    {
+      "keys": 1,
+      "first_key_step": 191,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-00.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 55,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-01.state"
+    },
+    {
+      "keys": 0,
+      "first_key_step": null,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-02.state"
+    },
+    {
+      "keys": 0,
+      "first_key_step": null,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-03.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 60,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-05.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 96,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-06.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 151,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-07.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 109,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-08.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 103,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-09.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 103,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-10.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 191,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-11.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 174,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-12.state"
+    },
+    {
+      "keys": 0,
+      "first_key_step": null,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-13.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 51,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-15.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 119,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-16.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 297,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-17.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 250,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-18.state"
+    },
+    {
+      "keys": 1,
+      "first_key_step": 120,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-19.state"
+    },
+    {
+      "keys": 0,
+      "first_key_step": null,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-20.state"
+    },
+    {
+      "keys": 0,
+      "first_key_step": null,
+      "damage": 0.0,
+      "s2_calls": 0,
+      "s2_secs": 0.0,
+      "interjects": 0,
+      "collected_by_interject": false,
+      "consults": [],
+      "state": "keydrop-21.state"
+    }
+  ]
+}

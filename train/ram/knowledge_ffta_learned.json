@@ -1,0 +1,29 @@
+[
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "World map travel via Area List",
+    "text": "To travel on the world map, open the Start menu and choose the 'Area List' option to pick a destination rather than walking the map directly.",
+    "source": "experience",
+    "confidence": 0.7,
+    "uses": 1505,
+    "created": 1783196324.1173966
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Select region then location",
+    "text": "In the Area List you first select a region/character heading (e.g. 'Cyril') and then the specific place (e.g. 'Giza Plains') to confirm travel.",
+    "source": "experience",
+    "confidence": 0.7,
+    "uses": 1505,
+    "created": 1783196324.1179569
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Confirm destination with A",
+    "text": "Navigate menu entries with the D-pad and press A to confirm each selection; pressing only Down without A never commits the travel choice.",
+    "source": "experience",
+    "confidence": 0.7,
+    "uses": 1505,
+    "created": 1783196324.1187003
+  }
+]

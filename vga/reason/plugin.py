@@ -44,11 +44,43 @@ _DIRECTIONS = {"up", "down", "left", "right"}
 # Directions are tried first (cheap, reversible); Start comes up once a full direction
 # cycle has failed to break the mash. Start is safe-reversible on GBA UIs (menus toggle).
 _FORCE_DIRS = ["down", "right", "up", "left", "start"]
+# Anti-freeze escape (2026-07-06). The DOMINANT real failure, measured across trajectories: the
+# agent enters a state where its chosen button is a NO-OP (the screen aHash does not move) and it
+# keeps re-justifying the SAME button for dozens of steps -- base_noknow_s0 spent 73% of an episode
+# frozen, incl. a 44-step run pressing A at a static "tutorial" it could not dismiss. The menu
+# commit-forcer above misses this: it needs a HOMOGENEOUS recent-button window (all d-pad, or all
+# A/B) and keys off loop-DENSITY, but a real flail is "mostly A with a few stray moves" -> reads as
+# mixed -> never forced. So key off the GROUND TRUTH instead: consecutive executed steps whose
+# button did not change the screen (rollout's changed = aHash hamming > 10). After FREEZE_K such
+# steps, OVERRIDE the model and cycle through the inputs it has NOT tried since freezing, one novel
+# input per step -- so ANY single input that escapes the state is found within ~len(_FREEZE_ESCAPE)
+# steps instead of never. Pattern-agnostic and game-agnostic; needs no perception/knowledge. Healthy
+# play never triggers it (a real dialog advance / cursor move changes the screen -> streak resets).
+# 0 disables; env VGA_FREEZE_K overrides. A first (most confirm/dialog states need it, and it is
+# usually already tried -> the sweep skips to B/back-out and the moves), Start last.
+DEFAULT_FREEZE_K = 3
+_FREEZE_ESCAPE = ["A", "B", "down", "up", "left", "right", "start"]
 # Scene-change threshold (of 256 aHash bits) above which a carried-over subgoal is considered
 # STALE and cleared. A carried subgoal surviving a full scene change is the anchor bug (a
 # "Select New Game" subgoal persisting into a battle, observed 2026-07-02). Same scene with
 # minor motion differs by <~20 bits; a genuine scene change (menu->battle) by >~50.
 SUBGOAL_STALE_HAMMING = 48
+# Intent-persistence commit (Task 01, 2026-07-04, docs/revitalization/01_intent_persistence.md).
+# When the agent HAS relevant learned knowledge for the current context but reflexively falls
+# back on the per-frame visual walk-prior (chooses a bare d-pad move on the field), lock a
+# FOREGROUND directive derived from that knowledge for this many steps, so the plan survives
+# the frames that do not immediately confirm progress. This is the persistence the validated
+# experiential loop lacked: a mined fact influenced ONE step then got overridden by the
+# walk-prior (day-2 bench-travel-learned). Small on purpose - a directive must not zombie past
+# its purpose (the echo/anchor bug burned twice). 0 disables; env VGA_COMMIT_N overrides.
+DEFAULT_COMMIT_N = 4
+# Hamming distance (of 256 aHash bits) since the commit was set, above which the screen counts
+# as MATERIALLY changed (the committed action produced real progress) and the commit is cleared.
+# A conservative BACKSTOP only: the primary clear signals are the model reporting mode=='menu'
+# (its "open the menu" plan visibly succeeded) and the hard steps_left bound. Set high (near a
+# full scene cut) so incremental walking/scrolling on the map does NOT prematurely clear it -
+# NOT tuned blind against a metric (day-2 lesson); it is a coarse "the whole screen changed" bar.
+COMMIT_CLEAR_HAMMING = 55
 # State-loop ("going in circles") detector defaults. See note in ReasonContext.
 # We flag a loop by DENSITY, not a raw revisit count: what fraction of the recent window is
 # made of screens that recur elsewhere in the window. A tight cycle (pub rumor 3-screen loop,
@@ -88,6 +120,92 @@ def _hamming(a: int, b: int) -> int:
     return int(a ^ b).bit_count()
 
 
+def _fuzzy_contains(text: str, sig: str, thr: float = 0.8) -> bool:
+    """True if `sig` appears in `text` as a substring or as a fuzzy (SequenceMatcher>=thr) span
+    of the same word-length. Tolerates the heavy OCR garble on GBA pixel-art (e.g. the info-fee
+    charge line "That'll be 300 gil" OCRs as 'that ll be 300 gis' - substring catches a clean
+    read, fuzzy catches a noisier one). Advisory, like all OCR here; used only to detect
+    OBJECTIVE phase-transition cues (Task 07)."""
+    if not text or not sig:
+        return False
+    if sig in text:
+        return True
+    tw, sw = text.split(), sig.split()
+    n = len(sw)
+    if not tw or n == 0:
+        return False
+    return any(SequenceMatcher(None, " ".join(tw[k:k + n]), sig).ratio() >= thr
+               for k in range(0, max(1, len(tw) - n + 1)))
+
+
+# ---- Task 07: durable, RAM-taught task-state phase machine -----------------------------------
+# docs/revitalization/07_task_state_memory.md. A GENERAL mechanism: a durable phase, advanced by
+# OBJECTIVE pixels-only cues and fed to the prompt as AUTHORITATIVE task-state, that fixes the
+# long-horizon "lost the thread" stall. Diagnostic (2026-07-06): from ffta_pub.state the agent
+# accepts the mission then FORGETS it - it misreads the world map as a dialog, mashes A re-trying
+# to accept, and wanders into the Cyril Monster Bank; furthest rung stays worldmap_regained (R3)
+# for ~77 steps. The free-text scratchpad cannot hold "the accept sub-task is DONE" across the
+# scene changes, so the durable phase does.
+#
+# NORTH-STAR DISCIPLINE: the phase cue is PIXELS-ONLY at inference (an OCR match on the frame).
+# The RAM oracle (clan_funds < pub baseline == mission accepted) is the TRAIN-time TEACHER that
+# VALIDATED the cue offline (train/ram/validate_phase_cue.py replays saved frames through the same
+# OCR path): across 4 real accept-episodes the "that ll be" charge-dialog cue fires exactly at the
+# fee charge - one decide-step before the RAM funds tick, one step after the confirm box, zero
+# false-fire on the pre-accept pub/briefing screens - and the RAM is NEVER read at inference.
+#
+# A spec is per-task, selected by the VGA_TASK_PHASE env (also the clean A/B toggle: unset -> the
+# whole mechanism is off and the plugin behaves exactly as before). Each phase:
+#   {"cues": (substr,...), "next": <phase name|None>, "directive": <authoritative prompt text>}
+# A frame's full-frame OCR advancing a cue moves the phase to `next`; while in a phase its
+# directive (if any) renders as ReasonContext.task_phase. The initial phase's directive is empty
+# (the base goal already states the first sub-task); the directive earns its keep AFTER the
+# transition, when the stateless agent would otherwise forget the completed sub-task.
+TASK_PHASE_SPECS = {
+    "herb": {
+        "start": "accept",
+        "phases": {
+            "accept": {
+                # Latch on the INFO-FEE CHARGE dialog. On real frames Tesseract reads it as
+                # "that ll be 300 gis" (the game text "That'll be 300 gil..."); the cue is that
+                # distinctive charge phrase, NOT the assumed "for the info" wording, which never
+                # actually OCRs (validated below). The charge dialog appears ONLY after the player
+                # picks Yes on "Accept these conditions?" - i.e. the fee is charged == the mission
+                # is committed. Deliberately NOT the confirm box: latching there would render the
+                # "already accepted" directive BEFORE the accept commits and could stop the agent
+                # from ever pressing Yes. Also deliberately NOT bare "300 gil": that substring is
+                # in the pre-accept briefing ("fee 300 gil") and false-fires before commit.
+                # VALIDATED offline (train/ram/validate_phase_cue.py, 2026-07-06) on 4 real
+                # accept-episodes: "that ll be" fires at the charge dialog in ALL 4, exactly one
+                # step after the confirm box and one decide-step before the RAM funds tick
+                # (5000->4700), and never on the confirm box or earlier pub screens.
+                "cues": ("that ll be", "ll be 300"),
+                "next": "travel",
+                "directive": "",
+            },
+            "travel": {
+                "cues": (),
+                "next": None,
+                # Task-state framing, NOT a menu-path walkthrough: it asserts the accept sub-task
+                # is DONE (the thing the stateless agent forgets) and names the remaining task
+                # (travel to Giza, already in the goal) with only general UI guidance (B backs out
+                # of a wrong menu). It does not script the travel menu path.
+                "directive": (
+                    "You have ALREADY accepted the \"Herb Picking\" mission - the info fee was "
+                    "paid, so it is registered. Do NOT accept a mission again, do NOT reopen the "
+                    "pub's Missions or Rumors list, and do NOT keep pressing A on the pub owner's "
+                    "dialogue. Your task now is to TRAVEL to Giza Plains and start its battle: if "
+                    "you are still inside the pub, leave it; once on the world map, move to Giza "
+                    "Plains and confirm to travel there, then begin the battle. If a shop, service "
+                    "menu, or tutorial pop-up opens, it is NOT part of this mission - back out "
+                    "with B."
+                ),
+            },
+        },
+    },
+}
+
+
 class VlmPlugin:
     name = "vlm"
     family = "universal"
@@ -107,6 +225,7 @@ class VlmPlugin:
                  dedup_ratio: float = DEFAULT_DEDUP_RATIO,
                  skills: Optional[SkillStore] = None,
                  menu_commit_k: int = DEFAULT_MENU_COMMIT_K,
+                 commit_n: int = DEFAULT_COMMIT_N,
                  game: str = "", knowledge: Optional[KnowledgeStore] = None,
                  tutor=None):
         self.reasoner = reasoner
@@ -123,6 +242,9 @@ class VlmPlugin:
         self._stages = [ln.split(":", 1)[1].strip()
                         for ln in goal.splitlines() if ln.strip().upper().startswith("STAGE:")]
         self._stage_i = 0
+        # aHash of the frame at which the stage pointer last advanced. Guards against burning
+        # multiple stages on one static screen (see the over-advance guard in decide()).
+        self._last_stage_advance_hash: Optional[int] = None
         self._step = 0
         # Tutorial-learning (docs/TUTORIAL_LEARNING_PLAN.md). `game` keys the KnowledgeStore
         # (persistent declarative facts learned from this game's tutorials); `tutor` is an
@@ -151,6 +273,13 @@ class VlmPlugin:
         # Last screen mode the model self-reported; keys skill retrieval for the NEXT
         # step (one-frame lag, like subgoal/progress). Empty until the first report.
         self._mode = ""
+        # Last OBJECTIVE scene descriptor the model emitted (Task 03B, 2026-07-05). Carried
+        # forward one step (same one-frame lag as _mode) and folded into the retrieval context
+        # for BOTH stores, so a grown store routes facts/skills by scene CONTENT instead of a
+        # bare one-word mode ("overworld") that overlaps no fact. That thin context was proven
+        # (Task 03) to drop the beneficial fact under budget pressure and starve the Task-01
+        # commit. Empty until the first report -> step 0 falls back to f"{mode} {dialog_text}".
+        self._last_scene = ""
         # Rolling log of recent EXECUTED steps (the loop reports the post-unstick
         # button + whether it changed the screen via note_outcome). Oldest first.
         self._history: deque[dict] = deque(maxlen=max(1, history_len))
@@ -169,8 +298,33 @@ class VlmPlugin:
         # aHash of the frame the current subgoal was set on; used to clear the subgoal when the
         # scene changes a lot (anti-anchor). None when there is no live subgoal.
         self._subgoal_hash: Optional[int] = None
+        # Intent-persistence commitment (Task 01). None = no active commitment; else a dict
+        # {"text": the foreground directive, "steps_left": int, "set_hash": aHash at set time}.
+        # Set when the agent reflexively walks despite holding relevant knowledge; rendered as a
+        # FOREGROUND directive (ReasonContext.committed) and self-limited by steps_left + a
+        # scene-change / menu-appeared clear. General mechanism - no game-specific content here.
+        self._commit_n = int(os.environ.get("VGA_COMMIT_N", commit_n))
+        self._commit: Optional[dict] = None
+        # Durable task-state phase machine (Task 07, 2026-07-06). Selected by the VGA_TASK_PHASE
+        # env, which is also the A/B toggle: a known task name installs its phase spec; empty /
+        # unknown -> the mechanism is OFF and task_phase is always "" (the plugin behaves exactly
+        # as before). Env-driven to match the existing A/B knobs (VGA_COMMIT_N, VGA_GOAL_ANCHOR_
+        # OFF) and because the game-agnostic plugin is built without task context. The cue reads
+        # PIXELS ONLY (self._ocr); RAM taught it offline and is never consulted here. See
+        # TASK_PHASE_SPECS and _advance_phase().
+        _task_phase_name = os.environ.get("VGA_TASK_PHASE", "").strip().lower()
+        self._phase_spec = TASK_PHASE_SPECS.get(_task_phase_name)
+        self._phase = self._phase_spec["start"] if self._phase_spec else ""
         # Rotating index into _FORCE_DIRS for the mash-break move-forcer.
         self._force_i = 0
+        # Anti-freeze escape (2026-07-06). _frozen_streak = consecutive EXECUTED steps whose button
+        # left the screen unchanged (fed by note_outcome from rollout's aHash diff); _tried_since_
+        # frozen = the set of buttons already emitted during the current frozen streak, so the
+        # override always injects a NOVEL input. See decide()/_freeze_escape and _FREEZE_ESCAPE.
+        _fk = os.environ.get("VGA_FREEZE_K", "")
+        self._freeze_k = int(_fk) if _fk.strip().lstrip("-").isdigit() else DEFAULT_FREEZE_K
+        self._frozen_streak = 0
+        self._tried_since_frozen: set = set()
         self._ocr = None
         if enable_dedup:
             try:  # Ocr is a self-contained Tesseract wrapper; keep the import local so a
@@ -222,6 +376,25 @@ class VlmPlugin:
         self._recent_texts.append(norm)
         return text, already
 
+    def _advance_phase(self, frame: np.ndarray) -> Optional[str]:
+        """Task 07: if the current task-state phase has OCR cues and one fires on THIS frame,
+        advance the durable phase to its `next`. Returns the matched cue string on an advance,
+        else None. PIXELS-ONLY (full-frame OCR); the RAM oracle is never consulted here - it was
+        only the offline teacher that validated these cues. No-op when the mechanism is off, when
+        OCR is unavailable, or when the phase is terminal / cueless (so once latched to the final
+        phase it stops OCR'ing)."""
+        if self._phase_spec is None or self._ocr is None:
+            return None
+        ph = self._phase_spec["phases"].get(self._phase)
+        if not ph or not ph.get("cues") or ph.get("next") is None:
+            return None
+        text = _norm_text(self._ocr.read(frame))
+        for sig in ph["cues"]:
+            if _fuzzy_contains(text, sig):
+                self._phase = ph["next"]
+                return sig
+        return None
+
     def note_outcome(self, button: str, reason: str, changed: bool) -> None:
         """Record the outcome of the action just EXECUTED by the loop: which button
         actually went to the game (post-unstick) and whether the screen changed as a
@@ -230,6 +403,31 @@ class VlmPlugin:
         button (not the VLM's pre-unstick choice) keeps the memory truthful: the model
         learns "down did nothing 6x", not "down worked" when an unstick override moved."""
         self._history.append({"button": button, "reason": reason, "changed": bool(changed)})
+        # Anti-freeze bookkeeping: the EXECUTED button either moved the screen (reset the streak
+        # and the tried-set) or was another no-op (extend the streak, remember we tried it so the
+        # escape injects something else next). This is the ground-truth "are we stuck" signal.
+        if changed:
+            self._frozen_streak = 0
+            self._tried_since_frozen.clear()
+        else:
+            self._frozen_streak += 1
+            self._tried_since_frozen.add(button)
+
+    def _freeze_escape_pick(self) -> Optional[str]:
+        """Anti-freeze escape selection (2026-07-06). If the screen has been static for at least
+        FREEZE_K executed steps, return the next input NOT yet tried during this frozen streak,
+        sweeping _FREEZE_ESCAPE in order; once every input has been tried without the screen moving,
+        clear the tried-set and restart the sweep (a repeat/combo may be what the state needs).
+        Returns None when the mechanism is off (FREEZE_K=0) or we are not yet frozen -- so healthy
+        play (which resets the streak every time the screen moves) never sees an override. Pure
+        function of the frozen-streak state; unit-testable without the emulator."""
+        if not self._freeze_k or self._frozen_streak < self._freeze_k:
+            return None
+        nxt = next((b for b in _FREEZE_ESCAPE if b not in self._tried_since_frozen), None)
+        if nxt is None:  # tried everything this streak; reset the sweep and start over
+            self._tried_since_frozen.clear()
+            nxt = _FREEZE_ESCAPE[0]
+        return nxt
 
     def matches(self, frame: np.ndarray) -> float:
         return self.BASELINE_MATCH
@@ -266,17 +464,79 @@ class VlmPlugin:
             self._subgoal = ""
             self._progress = ""
             self._subgoal_hash = None
+        # Intent-persistence commit (Task 01): CLEAR an active commitment before it is rendered
+        # this step, once (a) its window expired, (b) its purpose is visibly served - the model
+        # reported mode=='menu' LAST step, i.e. the committed "open the menu" plan worked, or
+        # (c) the scene changed materially (backstop). self._mode here is the PREVIOUS step's
+        # report. The hard steps_left bound guarantees the directive cannot zombie past N steps
+        # regardless of the perceptual signals - the tight bound the echo/anchor bug demands.
+        if self._commit is not None:
+            scene_moved = _hamming(cur_hash, self._commit["set_hash"]) > COMMIT_CLEAR_HAMMING
+            if self._commit["steps_left"] <= 0 or self._mode == "menu" or scene_moved:
+                self._commit = None
+        # Durable task-state phase (Task 07): advance the phase if an OBJECTIVE pixels-only cue
+        # fires on this frame (e.g. the info-fee dialog == mission accepted). Pure OCR; RAM is
+        # never read here. The resulting directive is fed to the prompt as authoritative task-
+        # state and PERSISTS across scene changes / the scratchpad wipe (unlike subgoal/commit).
+        phase_cue = self._advance_phase(state.frame)
+        task_phase = ""
+        if self._phase_spec is not None:
+            task_phase = (self._phase_spec["phases"].get(self._phase, {}) or {}).get("directive", "") or ""
+        # NOTE (2026-07-04): a mode anti-anchor was tried here (clear self._mode on a big scene
+        # change, mirroring the subgoal one) to kill a 46% "false menu belief" seen in the
+        # ffta_worldmap.state travel proxy. On the REAL ladder (bench-modeanchor-0704) it
+        # REGRESSED at_giza 4/8->0/8 and did NOT move the mechanism (real-ladder false-menu was
+        # already ~15%, unchanged). The 46% was a proxy artifact; the mode prior is load-bearing.
+        # Reverted. See sessions/2026-07-04-rescue-day2.md.
         # Dialogue OCR-dedup: have we already read the text currently on screen?
         dialog_text, already_read = self._read_dialog(state.frame)
-        # Persistent procedural skills for the mode the model reported LAST step. One
-        # frame behind on purpose (the current mode isn't known until the model answers).
-        skills = self.skills.retrieve(self._mode)
-        # Declarative tutorial-knowledge for this game, ranked by relevance to the current
-        # context (mode + on-screen text) so only pertinent facts hit the prompt. Empty when
-        # no store / nothing learned yet / VGA_KNOWLEDGE_OFF.
+        # Retrieval context for BOTH stores (Task 03B, 2026-07-05): the previous step's mode word
+        # + the previous step's OBJECTIVE scene descriptor + this step's dialog OCR. The scene
+        # descriptor is the fix for the thin-context cliff (Task 03): a bare "overworld" overlaps
+        # no fact, so a store grown past the retrieve limit dropped the beneficial fact under
+        # budget pressure and the Task-01 commit went dark. A real scene phrase ("world map with
+        # regions and the party caravan...") overlaps the relevant fact and routes it to
+        # knowledge[0]. One-frame lag (scene/mode are only known after /act), matching how
+        # subgoal/progress already flow; step 0 has no scene yet -> falls back to mode+dialog.
+        # A/B kill-switch (clean isolation, honors "change one thing per run"): VGA_SCENE_
+        # RETRIEVAL_OFF=1 reproduces the PRE-03B thin context (mode + dialog only) while the
+        # scene field is STILL emitted by the server, so the descriptor's effect on RETRIEVAL
+        # ROUTING can be measured separately from its effect as a prompt perturbation. Default
+        # (unset) = the enriched context. Mirrors VGA_SKILLS_EXACT / VGA_KNOWLEDGE_OFF.
+        if os.environ.get("VGA_SCENE_RETRIEVAL_OFF") in ("1", "true", "True"):
+            retr_ctx = f"{self._mode} {dialog_text}"
+        else:
+            retr_ctx = f"{self._mode} {self._last_scene} {dialog_text}"
+        # Task 03B GATE-2 post-mortem (2026-07-05): the scene descriptor fixed layer-1 routing
+        # (menu opens) but a MERGED multi-task store still dropped the layer-2 completion fact.
+        # "Confirm Location Selection: Press A" shares ZERO tokens with a "Party/Area List/System"
+        # menu-chrome frame, so retrieval.py's zero-overlap trim discards it ONCE the store
+        # outgrows the retrieve limit (the travel-only store only survived because 3 facts <=
+        # limit=3 never triggers the trim). Gate 1 offline proof: that KEY fact was present on
+        # only 18% of menu frames in the 6-fact combined store vs 100% in the 3-fact travel-only
+        # store -- the exact cause of combined_on opening the menu but never completing the Giza
+        # selection (it drifted into the Party menu and flailed). FIX: anchor the retrieval
+        # context on the ACTIVE GOAL, not just the momentary frame, so a task's procedural facts
+        # (which mention the task's OWN vocabulary -- "confirm travel", "location") stay
+        # retrievable across all of that task's frames even when the on-screen chrome does not
+        # name them. Offline this restores the KEY fact to 100% on travel frames and keeps the pub
+        # facts on pub frames; the cross-task "press start" decoy it co-surfaces is never the
+        # commit-locked top fact (0/82), only a secondary hint. General/taxonomy-free (the goal is
+        # free task text from the VLM/harness). Kill-switch VGA_GOAL_ANCHOR_OFF=1 reproduces the
+        # pre-fix frame-only context for clean A/B. See sessions/t03b-retrieval-0705/.
+        if os.environ.get("VGA_GOAL_ANCHOR_OFF") not in ("1", "true", "True"):
+            retr_ctx = f"{self.goal} {retr_ctx}"
+        # Persistent procedural skills, retrieved SEMANTICALLY (Task 02, 2026-07-05) against the
+        # SAME free-text context the knowledge store uses. A wrong/"unknown" mode now just nudges
+        # ranking instead of cliffing retrieval to []. Mode still flows UNCHANGED into the prompt
+        # below (load-bearing prior); the scene descriptor only enriches the retrieval KEY.
+        skills = self.skills.retrieve(context=retr_ctx)
+        # Declarative tutorial-knowledge for this game, ranked by relevance to the current context
+        # so only pertinent facts hit the prompt. Empty when no store / nothing learned yet /
+        # VGA_KNOWLEDGE_OFF.
         knowledge = []
         if self.knowledge is not None and self.game:
-            knowledge = self.knowledge.retrieve(self.game, context=f"{self._mode} {dialog_text}", limit=3)
+            knowledge = self.knowledge.retrieve(self.game, context=retr_ctx, limit=3)
         ctx = ReasonContext(
             goal=self._current_goal(), step=self._step,
             last_action=(last["button"] if last else ""),
@@ -290,9 +550,19 @@ class VlmPlugin:
             mode=self._mode,
             skills=skills,
             knowledge=knowledge,
+            committed=(self._commit["text"] if self._commit else ""),
+            task_phase=task_phase,
         )
         decision = self.reasoner.decide(state.frame, ctx)
         self.last_decision = decision
+        # Task 07: log the durable phase every step, and the objective cue on the step it latched,
+        # so a trajectory shows WHEN the accept->travel transition was detected from pixels (vs the
+        # RAM funds-drop) and that the directive was live thereafter. Cheap; general.
+        if decision.meta is not None and self._phase_spec is not None:
+            decision.meta["phase"] = self._phase
+            if phase_cue is not None:
+                decision.meta["phase_latched"] = {"to": self._phase, "cue": phase_cue,
+                                                   "step": self._step}
         # Commit scaffold. The model reliably PERCEIVES a decision screen but is brittle about
         # goal-directed CURSOR COMMIT - two failure modes seen live (2026-07-02): PARALYSIS
         # (moves the cursor forever, never presses A) and MASH (presses A/B in place without
@@ -338,24 +608,93 @@ class VlmPlugin:
         else:
             action = decision.action
             emitted = chosen
+        # Anti-freeze escape (2026-07-06) -- HIGHEST-priority override. When the screen has not
+        # moved for FREEZE_K executed steps, neither the model's choice nor the menu-commit forcer
+        # is working, so stop trusting them: inject the first input NOT yet tried during this frozen
+        # streak (novel input per step), sweeping the whole set so any escape is found fast. Keyed
+        # purely on ground truth (screen static), not on button pattern, so the "mostly-A-with-a-
+        # few-moves" flail that evades the homogeneous menu-commit forcer is caught here. If the
+        # sweep exhausts every input without the screen moving (a state no single press escapes),
+        # clear the tried-set and sweep again (a repeat/combo may be needed) -- still >= the old
+        # behavior of mashing one dead button forever. Placed after the forcer so it wins.
+        esc = self._freeze_escape_pick()
+        if esc is not None:
+            action = action_from_choice(
+                esc, note=f"anti-freeze: screen static {self._frozen_streak} steps, cycling inputs")
+            emitted = esc
+            if decision.meta is not None:
+                decision.meta["anti_freeze"] = {"button": esc, "streak": self._frozen_streak}
         self._recent_emitted.append(emitted)
+        # Intent-persistence commit (Task 01): SET or DECREMENT. Fire ONLY when the agent HAS
+        # relevant learned knowledge for this context yet the model reflexively CHOSE a bare
+        # d-pad move while not in a menu/dialog/battle - i.e. it fell back on the visual
+        # walk-prior instead of acting on what it learned (the exact day-2 revert). Lock the
+        # top retrieved fact as a foreground directive for N steps; from next step it renders
+        # via ReasonContext.committed, weighted above the reflex. `chosen` is the MODEL's own
+        # choice (not the scaffold override), and self._mode is still the PREVIOUS step's
+        # report here (updated below). No new commit while one is active - it just decrements.
+        # GENERAL: nothing game-specific - the only game-specific input is knowledge[0], a fact
+        # from the general KnowledgeStore / experiential-mining channel.
+        if (self._commit_n and self._commit is None and knowledge
+                and chosen in _DIRECTIONS
+                and self._mode not in ("menu", "dialog", "battle", "shop", "title", "cutscene")):
+            self._commit = {"text": str(knowledge[0]), "steps_left": self._commit_n,
+                            "set_hash": cur_hash}
+            if decision.meta is not None:
+                decision.meta["commit_set"] = self._commit["text"]
+        elif self._commit is not None:
+            self._commit["steps_left"] -= 1
+        if decision.meta is not None and self._commit is not None:
+            decision.meta["commit_active"] = self._commit["steps_left"]
+        # Log the knowledge facts retrieved this step so a trajectory shows WHICH learned
+        # facts were in front of the model when it acted (visibility into "did it pull what it
+        # learned"). Cheap; general (helps headless diagnosis too), added 2026-07-04.
+        if decision.meta is not None and knowledge:
+            decision.meta["knowledge_retrieved"] = list(knowledge)
+        # Task 03B diagnosis: record the exact retrieval context that selected this step's
+        # facts/skills, so a trajectory shows whether the scene descriptor actually enriched the
+        # key (vs. a bare "overworld") and thereby re-armed the commit. Cheap; general.
+        if decision.meta is not None:
+            decision.meta["retrieval_context"] = retr_ctx
         # Carry the model's updated scratchpad forward. Keep the prior value if the model
         # returned an empty string, so a momentary omission doesn't wipe the plan.
         new_subgoal = (decision.meta or {}).get("subgoal")
         new_progress = (decision.meta or {}).get("progress")
         new_mode = (decision.meta or {}).get("mode")
+        # Objective scene descriptor for the NEXT step's retrieval context (Task 03B). Keep the
+        # prior value when the model omits it (a momentary parse gap should not blank the routing
+        # key), matching how subgoal/progress/mode carry forward. Host-side retrieval key only -
+        # never rendered back into the prompt as a fact, so a stale value is low-risk (it just
+        # routes retrieval a frame late; the commit already clears on a material scene change).
+        new_scene = (decision.meta or {}).get("scene")
         # Staged-goal advance: the model declared the current stage complete. Consume the
         # sentinel (it must not persist as a real sub-goal), advance the one-way pointer, and
         # clear the scratchpad so the next stage starts from what the screen shows.
         if (self._stages and new_subgoal
                 and str(new_subgoal).strip().upper().startswith("STAGE DONE")):
-            if self._stage_i < len(self._stages) - 1:
-                self._stage_i += 1
-            if decision.meta is not None:
-                decision.meta["stage_advanced_to"] = self._stage_i
-            self._subgoal = ""
-            self._progress = ""
-            self._subgoal_hash = None
+            # Over-advance guard (2026-07-04 day3). A stage is a SCREEN-STATE milestone, so
+            # two STAGE DONE declarations on the SAME unchanged screen cannot both be real:
+            # the model regained the world map and, on that one static frame, declared BOTH
+            # "return to world map" AND "open the menu/Area List" complete (steps 49-50,
+            # bench-herb-stages3) -- burning the open-menu stage without ever opening the menu,
+            # then hallucinating an Area List to match the (unrecoverable, one-way) stage text.
+            # Only honor an advance if the screen has materially changed since the last one;
+            # a repeat STAGE DONE on the same frame is a no-op (the pointer waits for real
+            # progress). First advance (hash None) is always allowed.
+            same_screen = (self._last_stage_advance_hash is not None
+                           and _hamming(cur_hash, self._last_stage_advance_hash) <= self._revisit_tol)
+            if same_screen:
+                if decision.meta is not None:
+                    decision.meta["stage_advance_blocked"] = self._stage_i
+            else:
+                if self._stage_i < len(self._stages) - 1:
+                    self._stage_i += 1
+                self._last_stage_advance_hash = cur_hash
+                if decision.meta is not None:
+                    decision.meta["stage_advanced_to"] = self._stage_i
+                self._subgoal = ""
+                self._progress = ""
+                self._subgoal_hash = None
             new_subgoal = None
         if new_subgoal:
             self._subgoal = str(new_subgoal)
@@ -366,6 +705,8 @@ class VlmPlugin:
             self._progress = str(new_progress)
         if new_mode:
             self._mode = str(new_mode).strip().lower()
+        if new_scene:
+            self._last_scene = str(new_scene).strip()
         # Tutorial-learning: if the model flagged this as an instructional screen, accumulate
         # the page (deduped by phash - the agent re-reads a page before advancing); when the
         # tutorial ends (a non-tutorial screen after we had pages) distill+store the whole thing.
@@ -419,6 +760,7 @@ class VlmPlugin:
     def reset(self) -> None:
         self._step = 0
         self._stage_i = 0
+        self._last_stage_advance_hash = None
         self._pending_combo = []
         self._history.clear()
         self._recent_hashes.clear()
@@ -426,8 +768,15 @@ class VlmPlugin:
         self._subgoal = ""
         self._progress = ""
         self._subgoal_hash = None
+        self._commit = None
+        # Task 07: reset the durable phase to its start each episode (the phase spec itself, like
+        # skills/knowledge, is not rebuilt - only the live phase pointer is per-episode state).
+        self._phase = self._phase_spec["start"] if self._phase_spec else ""
         self._mode = ""
+        self._last_scene = ""
         self._force_i = 0
+        self._frozen_streak = 0
+        self._tried_since_frozen.clear()
         self._recent_emitted.clear()
         # Drop any in-progress tutorial accumulation (a tutorial spanning an episode boundary
         # is rare and the server may be unavailable at reset). NOTE: neither self.skills NOR

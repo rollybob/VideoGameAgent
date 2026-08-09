@@ -1,0 +1,8 @@
+{
+  "chain_complete_pct": 36.7,
+  "eps_with_kill": 28,
+  "collect_given_kill_pct": 78.6,
+  "far_guard_pct": 82.5,
+  "n_far": 120,
+  "verdict": "PARTIAL+FAR_GUARD_FAILED"
+}

@@ -37,6 +37,8 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Optional
 
+from .retrieval import rank_by_overlap
+
 # Default store location. Starts EMPTY (no seed facts) - unlike skills, knowledge is meant to
 # be LEARNED from the game itself. Override with VGA_KNOWLEDGE_PATH (e.g. a scratch store per
 # eval so a run does not pollute the shared knowledge, mirroring VGA_SKILLS_PATH).
@@ -46,21 +48,12 @@ DEFAULT_PATH = Path(__file__).with_name("knowledge.json")
 # dropped, so re-reading a tutorial is idempotent.
 _DEDUP_RATIO = 0.82
 
-# Words too common to help keyword ranking (kept tiny + game-agnostic).
-_STOP = frozenset("a an the to of in on is are be it its you your with and or for as at this "
-                  "that these those can will may your than then so but if when your not no".split())
-
 
 def _game_key(rom_or_game: str) -> str:
     """Normalize a ROM path / name to a stable per-game key."""
     base = os.path.basename(rom_or_game or "").lower()
     base = re.sub(r"\.(gba|gbc|gb|nes|sfc|smc|md|zip)$", "", base)
     return base.strip() or "unknown"
-
-
-def _tokens(text: str) -> set:
-    return {w for w in re.findall(r"[a-z0-9]+", (text or "").lower())
-            if w not in _STOP and len(w) > 2}
 
 
 @dataclass
@@ -127,17 +120,12 @@ class KnowledgeStore:
         hits = [f for f in self._facts if f.game == game]
         if not hits:
             return []
-        ctx = _tokens(context)
-        if ctx:
-            def score(f: Fact) -> tuple:
-                overlap = len(_tokens(f.topic + " " + f.text) & ctx)
-                return (overlap, f.confidence, f.uses)
-            hits.sort(key=score, reverse=True)
-            # When a context is given, drop zero-overlap facts so we surface only the relevant.
-            hits = [f for f in hits if len(_tokens(f.topic + " " + f.text) & ctx) > 0]
-        else:
-            hits.sort(key=lambda f: (f.confidence, f.uses), reverse=True)
-        hits = hits[:limit]
+        # Rank by keyword overlap against the free-text context (mode + on-screen text), the
+        # shared semantic path also used by SkillStore. See vga/reason/retrieval.py for the
+        # zero-overlap / token-budget behaviour (surface everything when the store is small).
+        hits = rank_by_overlap(hits, context,
+                               searchable=lambda f: f.topic + " " + f.text,
+                               tiebreak=lambda f: (f.confidence, f.uses), limit=limit)
         for f in hits:
             f.uses += 1
         if hits:

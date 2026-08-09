@@ -100,6 +100,32 @@ class ReasonContext:
     # game-keyed, learn-once-keep-forever world-knowledge side of tutorial-learning
     # (2026-07-02), sibling to the procedural `skills`. See vga/reason/knowledge.py.
     knowledge: list[str] = field(default_factory=list)
+    # Durable COMMITMENT (2026-07-04, Task 01 intent-persistence). A bounded, FOREGROUND
+    # directive the plugin locks in when the agent reflexively falls back on the per-frame
+    # visual walk-prior WHILE it holds relevant learned knowledge that implies a different
+    # move. Unlike `subgoal` above (advisory, framed "may be out of date - trust the screen"),
+    # this is presented as an ACTIONABLE plan to carry out NOW, weighted ABOVE the reflex,
+    # for a few steps or until the screen materially changes (e.g. a menu opens). It is the
+    # persistence the validated experiential loop lacked: a mined fact influenced ONE step
+    # then got overridden by the walk-prior (day-2 bench-travel-learned). Empty when no
+    # commitment is active. Bounded tightly on purpose (anti-anchor). See plugin.py.
+    committed: str = ""
+    # Durable, RAM-TAUGHT task-state PHASE directive (2026-07-06, Task 07 task-state memory,
+    # docs/revitalization/07_task_state_memory.md). Where the agent is in a MULTI-STEP task
+    # ("you have ALREADY accepted the mission; now travel"), latched by an OBJECTIVE pixels-only
+    # cue and fed as AUTHORITATIVE context. Distinct from everything above: `subgoal` is the
+    # model's own free-text note (wiped on scene change, framed "may be stale"); `committed` is
+    # a knowledge-derived reflex override bounded to a few steps and CLEARED on a material scene
+    # change. This one is DURABLE - it survives the scratchpad wipe AND scene changes and holds
+    # for the rest of the task once latched, because the failure it fixes spans ~77 steps (after
+    # accepting, the stateless agent forgets and re-tries to accept / re-enters the pub - it lost
+    # the accept->travel thread; diagnostic 2026-07-06). It is anti-anchor's deliberate opposite,
+    # justified ONLY because the phase is set by an objective RAM-VALIDATED cue (the info-fee
+    # dialog == accept committed), not the model's own possibly-wrong belief. RAM is the TRAIN-
+    # time teacher for the cue only; at inference the phase comes from pixels (OCR), never RAM.
+    # Empty until the phase advances past its initial state / when the mechanism is off. See
+    # plugin.py (self._phase).
+    task_phase: str = ""
 
 
 class Reasoner(Protocol):

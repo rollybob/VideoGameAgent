@@ -1,0 +1,18 @@
+{
+ "classes": [
+  "noop",
+  "up",
+  "down",
+  "left",
+  "right",
+  "A",
+  "B",
+  "L",
+  "R"
+ ],
+ "img_h": 160,
+ "img_w": 240,
+ "frame_skip": 4,
+ "n_tapes": 8,
+ "action_mapping": "verb-priority(B>A>L>R>dirs) modal-per-window"
+}

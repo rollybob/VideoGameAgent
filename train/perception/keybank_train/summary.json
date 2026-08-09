@@ -1,0 +1,12 @@
+{
+  "kills": 36,
+  "keys": 18,
+  "deaths": 0,
+  "pickup_validated": 17,
+  "frames": {
+    "control": 0,
+    "death_anim": 0,
+    "key_onscreen": 0,
+    "key_offscreen": 0
+  }
+}

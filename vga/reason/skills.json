@@ -2,6 +2,7 @@
   {
     "mode": "menu",
     "text": "The cursor highlights exactly ONE option. Pressing A selects the HIGHLIGHTED option only. To choose a DIFFERENT option you must FIRST move the cursor with the D-pad (up/down/left/right) onto that option, THEN press A. Pressing A again without moving just re-selects the same item - if you keep landing on the same choice, MOVE the cursor first.",
+    "context": "a menu, list, or set of selectable options or choices; moving the cursor between choices and pressing A to confirm the highlighted one",
     "source": "seed",
     "confidence": 1.0,
     "uses": 0,
@@ -10,6 +11,7 @@
   {
     "mode": "menu",
     "text": "A list you have already opened/read will not advance by re-selecting the same entry. Move the cursor to a DIFFERENT, not-yet-tried entry, or press B once to back out to the level above - not A on the same row.",
+    "context": "a menu or list already opened, cursor on an entry that has been tried; needing a different option or choice, or to back out of the list",
     "source": "seed",
     "confidence": 1.0,
     "uses": 0,
@@ -18,6 +20,7 @@
   {
     "mode": "dialog",
     "text": "A text/dialogue box is up. Press A to advance it. If a blinking arrow or prompt shows there is more text, keep pressing A (repeats>1) until the box closes; the D-pad does nothing useful while text is showing.",
+    "context": "a dialog or dialogue text box showing on-screen message or conversation text, possibly a blinking more arrow; advancing the text",
     "source": "seed",
     "confidence": 1.0,
     "uses": 0,
@@ -26,6 +29,7 @@
   {
     "mode": "dialog",
     "text": "A Yes/No (or multi-choice) prompt starts with the cursor on a DEFAULT option that is often not the one you want. Move the cursor to the option you actually want BEFORE pressing A - do not assume the default is Yes.",
+    "context": "a dialog yes or no question or multiple-choice prompt; accept, decline, confirm, or answer a choice with the cursor on a default option",
     "source": "seed",
     "confidence": 1.0,
     "uses": 0,
@@ -34,6 +38,7 @@
   {
     "mode": "overworld",
     "text": "On a map/overworld, hold a direction (repeats>1) to actually travel; a single tap barely moves. Walk into doors, NPCs, or highlighted tiles to interact; press A when adjacent and facing them.",
+    "context": "the overworld, world map, field, or town; walking, moving, travelling, and interacting with doors, npcs, or highlighted tiles",
     "source": "seed",
     "confidence": 1.0,
     "uses": 0,
@@ -42,6 +47,7 @@
   {
     "mode": "battle",
     "text": "In a battle menu, the same cursor rule applies: A commits the HIGHLIGHTED command/target. Move the cursor to the intended unit, command, or target tile with the D-pad before confirming with A.",
+    "context": "a battle, fight, or combat; choosing a command, action, unit, or target tile from a cursor before confirming the action",
     "source": "seed",
     "confidence": 1.0,
     "uses": 0,

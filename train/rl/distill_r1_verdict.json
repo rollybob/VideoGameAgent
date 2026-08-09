@@ -1,0 +1,41 @@
+{
+  "far": {
+    "distilled": {
+      "n": 120,
+      "collect": 0.9083333333333333,
+      "med_fk": 73,
+      "at150": 0.6583333333333333
+    },
+    "base": {
+      "n": 120,
+      "collect": 0.7666666666666667,
+      "med_fk": 80.5,
+      "at150": 0.5916666666666667
+    },
+    "arbiter_ceiling": {
+      "n": 60,
+      "collect": 0.95,
+      "med_fk": 64,
+      "at150": 0.75
+    },
+    "delta_points": 14.2,
+    "gap_closed": 0.77
+  },
+  "near_guard": {
+    "distilled": {
+      "n": 90,
+      "collect": 0.8777777777777778,
+      "med_fk": 28,
+      "at150": 0.6888888888888889
+    },
+    "base": {
+      "n": 90,
+      "collect": 0.8111111111111111,
+      "med_fk": 77,
+      "at150": 0.6555555555555556
+    },
+    "delta_points": 6.7
+  },
+  "det_far_distilled": 0.6363636363636364,
+  "verdict": "SUCCESS"
+}

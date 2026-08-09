@@ -1,0 +1,8 @@
+{
+  "train/s1": 0.7450980392156863,
+  "train/arbiter": 0.9215686274509803,
+  "train/random": 0.46078431372549017,
+  "holdout/s1": 0.8444444444444444,
+  "holdout/arbiter": 0.8222222222222222,
+  "holdout/random": 0.4
+}

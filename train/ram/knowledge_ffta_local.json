@@ -1,0 +1,29 @@
+[
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Navigate via Area List",
+    "text": "Select 'Area List' to access map regions like 'Giza Plains'.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 909,
+    "created": 1783277881.615742
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Confirm Location Selection",
+    "text": "Press 'A' on the highlighted location to confirm travel.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 909,
+    "created": 1783277881.6161025
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Use Party Menu for Navigation",
+    "text": "The 'Party' menu can reveal navigation options like 'Area List'.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 909,
+    "created": 1783277881.6164443
+  }
+]

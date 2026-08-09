@@ -1,0 +1,550 @@
+{"file": "ep00_step00010.png", "ep": 0, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep00_step00020.png", "ep": 0, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep00_step00030.png", "ep": 0, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep00_step00040.png", "ep": 0, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep00_step00050.png", "ep": 0, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep00_step00060.png", "ep": 0, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep00_step00070.png", "ep": 0, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep00_step00080.png", "ep": 0, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep00_step00090.png", "ep": 0, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep00_step00100.png", "ep": 0, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep00_step00110.png", "ep": 0, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep00_step00120.png", "ep": 0, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep00_step00130.png", "ep": 0, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep00_step00141.png", "ep": 0, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep00_step00144.png", "ep": 0, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [858, 3978], "drops": [[847, 3938]], "dx": -11, "dy": -40, "dist": 41.5, "direction": "up"}
+{"file": "ep00_step00146.png", "ep": 0, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [866, 3986], "drops": [[847, 3938]], "dx": -19, "dy": -48, "dist": 51.6, "direction": "up"}
+{"file": "ep00_step00148.png", "ep": 0, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [874, 3994], "drops": [[847, 3938]], "dx": -27, "dy": -56, "dist": 62.2, "direction": "up-left"}
+{"file": "ep00_step00150.png", "ep": 0, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep00_step00152.png", "ep": 0, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep00_step00154.png", "ep": 0, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep00_step00156.png", "ep": 0, "step": 156, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00160.png", "ep": 0, "step": 160, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00164.png", "ep": 0, "step": 164, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00168.png", "ep": 0, "step": 168, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00172.png", "ep": 0, "step": 172, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00176.png", "ep": 0, "step": 176, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00180.png", "ep": 0, "step": 180, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00184.png", "ep": 0, "step": 184, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00188.png", "ep": 0, "step": 188, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00192.png", "ep": 0, "step": 192, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00196.png", "ep": 0, "step": 196, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00200.png", "ep": 0, "step": 200, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00204.png", "ep": 0, "step": 204, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00208.png", "ep": 0, "step": 208, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00212.png", "ep": 0, "step": 212, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00216.png", "ep": 0, "step": 216, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00220.png", "ep": 0, "step": 220, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00224.png", "ep": 0, "step": 224, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00228.png", "ep": 0, "step": 228, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00232.png", "ep": 0, "step": 232, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00236.png", "ep": 0, "step": 236, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00240.png", "ep": 0, "step": 240, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00244.png", "ep": 0, "step": 244, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00248.png", "ep": 0, "step": 248, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep00_step00252.png", "ep": 0, "step": 252, "mode": "scripted", "phase": "key_offscreen", "link": [886, 4006], "drops": [[847, 3938]], "dx": -39, "dy": -68, "dist": 78.4, "direction": "up-left"}
+{"file": "ep01_step00010.png", "ep": 1, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep01_step00020.png", "ep": 1, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep01_step00030.png", "ep": 1, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep01_step00040.png", "ep": 1, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep01_step00050.png", "ep": 1, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep01_step00060.png", "ep": 1, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep01_step00070.png", "ep": 1, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep01_step00080.png", "ep": 1, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep01_step00090.png", "ep": 1, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep01_step00100.png", "ep": 1, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep01_step00110.png", "ep": 1, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep01_step00120.png", "ep": 1, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep01_step00130.png", "ep": 1, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep01_step00141.png", "ep": 1, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep01_step00144.png", "ep": 1, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00146.png", "ep": 1, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00148.png", "ep": 1, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00150.png", "ep": 1, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00152.png", "ep": 1, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00154.png", "ep": 1, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00156.png", "ep": 1, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00158.png", "ep": 1, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep01_step00160.png", "ep": 1, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [836, 3963], "drops": [[847, 3938]], "dx": 11, "dy": -25, "dist": 27.3, "direction": "up-right"}
+{"file": "ep01_step00162.png", "ep": 1, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [840, 3953], "drops": [[847, 3938]], "dx": 7, "dy": -15, "dist": 16.6, "direction": "up-right"}
+{"file": "ep01_step00164.png", "ep": 1, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [845, 3944], "drops": [[847, 3938]], "dx": 2, "dy": -6, "dist": 6.3, "direction": "on-link"}
+{"file": "ep02_step00010.png", "ep": 2, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep02_step00020.png", "ep": 2, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep02_step00030.png", "ep": 2, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep02_step00040.png", "ep": 2, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep02_step00050.png", "ep": 2, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep02_step00060.png", "ep": 2, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep02_step00070.png", "ep": 2, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep02_step00080.png", "ep": 2, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep02_step00090.png", "ep": 2, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep02_step00100.png", "ep": 2, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep02_step00110.png", "ep": 2, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep02_step00120.png", "ep": 2, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep02_step00130.png", "ep": 2, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep02_step00141.png", "ep": 2, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep02_step00144.png", "ep": 2, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [847, 3950], "drops": [[847, 3938]], "dx": 0, "dy": -12, "dist": 12.0, "direction": "on-link"}
+{"file": "ep02_step00146.png", "ep": 2, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3939], "drops": [[847, 3938]], "dx": -1, "dy": -1, "dist": 1.4, "direction": "on-link"}
+{"file": "ep02_step00148.png", "ep": 2, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3936], "drops": [[847, 3938]], "dx": -1, "dy": 2, "dist": 2.2, "direction": "on-link"}
+{"file": "ep02_step00150.png", "ep": 2, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3936], "drops": [[847, 3938]], "dx": -1, "dy": 2, "dist": 2.2, "direction": "on-link"}
+{"file": "ep02_step00152.png", "ep": 2, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3936], "drops": [[847, 3938]], "dx": -1, "dy": 2, "dist": 2.2, "direction": "on-link"}
+{"file": "ep02_step00154.png", "ep": 2, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3936], "drops": [[847, 3938]], "dx": -1, "dy": 2, "dist": 2.2, "direction": "on-link"}
+{"file": "ep02_step00156.png", "ep": 2, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3936], "drops": [[847, 3938]], "dx": -1, "dy": 2, "dist": 2.2, "direction": "on-link"}
+{"file": "ep02_step00158.png", "ep": 2, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3936], "drops": [[847, 3938]], "dx": -1, "dy": 2, "dist": 2.2, "direction": "on-link"}
+{"file": "ep02_step00160.png", "ep": 2, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3936], "drops": [[847, 3938]], "dx": -1, "dy": 2, "dist": 2.2, "direction": "on-link"}
+{"file": "ep03_step00010.png", "ep": 3, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep03_step00020.png", "ep": 3, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep03_step00030.png", "ep": 3, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep03_step00040.png", "ep": 3, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep03_step00050.png", "ep": 3, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep03_step00060.png", "ep": 3, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep03_step00070.png", "ep": 3, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep03_step00080.png", "ep": 3, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep03_step00090.png", "ep": 3, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep03_step00100.png", "ep": 3, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep03_step00110.png", "ep": 3, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep03_step00120.png", "ep": 3, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep03_step00130.png", "ep": 3, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep03_step00141.png", "ep": 3, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep03_step00144.png", "ep": 3, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [836, 3956], "drops": [[847, 3938]], "dx": 11, "dy": -18, "dist": 21.1, "direction": "up-right"}
+{"file": "ep03_step00146.png", "ep": 3, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3946], "drops": [[847, 3938]], "dx": 15, "dy": -8, "dist": 17.0, "direction": "up-right"}
+{"file": "ep03_step00148.png", "ep": 3, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00150.png", "ep": 3, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00152.png", "ep": 3, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00154.png", "ep": 3, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00156.png", "ep": 3, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00158.png", "ep": 3, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00160.png", "ep": 3, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00162.png", "ep": 3, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00164.png", "ep": 3, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00166.png", "ep": 3, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep03_step00168.png", "ep": 3, "step": 168, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep04_step00010.png", "ep": 4, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep04_step00020.png", "ep": 4, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep04_step00030.png", "ep": 4, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep04_step00040.png", "ep": 4, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep04_step00050.png", "ep": 4, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep04_step00060.png", "ep": 4, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep04_step00070.png", "ep": 4, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep04_step00080.png", "ep": 4, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep04_step00090.png", "ep": 4, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep04_step00100.png", "ep": 4, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep04_step00110.png", "ep": 4, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep04_step00120.png", "ep": 4, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep04_step00130.png", "ep": 4, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep04_step00141.png", "ep": 4, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep04_step00144.png", "ep": 4, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00146.png", "ep": 4, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00148.png", "ep": 4, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00150.png", "ep": 4, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00152.png", "ep": 4, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00154.png", "ep": 4, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00156.png", "ep": 4, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00158.png", "ep": 4, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00160.png", "ep": 4, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00162.png", "ep": 4, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00164.png", "ep": 4, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00166.png", "ep": 4, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00168.png", "ep": 4, "step": 168, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00170.png", "ep": 4, "step": 170, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00172.png", "ep": 4, "step": 172, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00174.png", "ep": 4, "step": 174, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00176.png", "ep": 4, "step": 176, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00178.png", "ep": 4, "step": 178, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00180.png", "ep": 4, "step": 180, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00182.png", "ep": 4, "step": 182, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00184.png", "ep": 4, "step": 184, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00186.png", "ep": 4, "step": 186, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00188.png", "ep": 4, "step": 188, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00190.png", "ep": 4, "step": 190, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00192.png", "ep": 4, "step": 192, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00194.png", "ep": 4, "step": 194, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00196.png", "ep": 4, "step": 196, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00198.png", "ep": 4, "step": 198, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00200.png", "ep": 4, "step": 200, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00202.png", "ep": 4, "step": 202, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00204.png", "ep": 4, "step": 204, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00206.png", "ep": 4, "step": 206, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00208.png", "ep": 4, "step": 208, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00210.png", "ep": 4, "step": 210, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00212.png", "ep": 4, "step": 212, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00214.png", "ep": 4, "step": 214, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00216.png", "ep": 4, "step": 216, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00218.png", "ep": 4, "step": 218, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00220.png", "ep": 4, "step": 220, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00222.png", "ep": 4, "step": 222, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00224.png", "ep": 4, "step": 224, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00226.png", "ep": 4, "step": 226, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00228.png", "ep": 4, "step": 228, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00230.png", "ep": 4, "step": 230, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00232.png", "ep": 4, "step": 232, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00234.png", "ep": 4, "step": 234, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00236.png", "ep": 4, "step": 236, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00238.png", "ep": 4, "step": 238, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00240.png", "ep": 4, "step": 240, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00242.png", "ep": 4, "step": 242, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00244.png", "ep": 4, "step": 244, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00246.png", "ep": 4, "step": 246, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00248.png", "ep": 4, "step": 248, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00250.png", "ep": 4, "step": 250, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00252.png", "ep": 4, "step": 252, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00254.png", "ep": 4, "step": 254, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00256.png", "ep": 4, "step": 256, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00258.png", "ep": 4, "step": 258, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00260.png", "ep": 4, "step": 260, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00262.png", "ep": 4, "step": 262, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00264.png", "ep": 4, "step": 264, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00266.png", "ep": 4, "step": 266, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00268.png", "ep": 4, "step": 268, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00270.png", "ep": 4, "step": 270, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00272.png", "ep": 4, "step": 272, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00274.png", "ep": 4, "step": 274, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00276.png", "ep": 4, "step": 276, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00278.png", "ep": 4, "step": 278, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00280.png", "ep": 4, "step": 280, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00282.png", "ep": 4, "step": 282, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00284.png", "ep": 4, "step": 284, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00286.png", "ep": 4, "step": 286, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00288.png", "ep": 4, "step": 288, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00290.png", "ep": 4, "step": 290, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00292.png", "ep": 4, "step": 292, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00294.png", "ep": 4, "step": 294, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00296.png", "ep": 4, "step": 296, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00298.png", "ep": 4, "step": 298, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00300.png", "ep": 4, "step": 300, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00302.png", "ep": 4, "step": 302, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep04_step00304.png", "ep": 4, "step": 304, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep05_step00010.png", "ep": 5, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep05_step00020.png", "ep": 5, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep05_step00030.png", "ep": 5, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep05_step00040.png", "ep": 5, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep05_step00050.png", "ep": 5, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep05_step00060.png", "ep": 5, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep05_step00070.png", "ep": 5, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep05_step00080.png", "ep": 5, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep05_step00090.png", "ep": 5, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep05_step00100.png", "ep": 5, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep05_step00110.png", "ep": 5, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep05_step00120.png", "ep": 5, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep05_step00130.png", "ep": 5, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep05_step00141.png", "ep": 5, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep05_step00144.png", "ep": 5, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [836, 3956], "drops": [[847, 3938]], "dx": 11, "dy": -18, "dist": 21.1, "direction": "up-right"}
+{"file": "ep05_step00146.png", "ep": 5, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3946], "drops": [[847, 3938]], "dx": 15, "dy": -8, "dist": 17.0, "direction": "up-right"}
+{"file": "ep05_step00148.png", "ep": 5, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00150.png", "ep": 5, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00152.png", "ep": 5, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00154.png", "ep": 5, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00156.png", "ep": 5, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00158.png", "ep": 5, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00160.png", "ep": 5, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00162.png", "ep": 5, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00164.png", "ep": 5, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3944], "drops": [[847, 3938]], "dx": 15, "dy": -6, "dist": 16.2, "direction": "right"}
+{"file": "ep05_step00166.png", "ep": 5, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [838, 3944], "drops": [[847, 3938]], "dx": 9, "dy": -6, "dist": 10.8, "direction": "on-link"}
+{"file": "ep06_step00010.png", "ep": 6, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep06_step00020.png", "ep": 6, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep06_step00030.png", "ep": 6, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep06_step00040.png", "ep": 6, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep06_step00050.png", "ep": 6, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep06_step00060.png", "ep": 6, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep06_step00070.png", "ep": 6, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep06_step00080.png", "ep": 6, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep06_step00090.png", "ep": 6, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep06_step00100.png", "ep": 6, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep06_step00110.png", "ep": 6, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep06_step00120.png", "ep": 6, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep06_step00130.png", "ep": 6, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep06_step00141.png", "ep": 6, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep06_step00144.png", "ep": 6, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00146.png", "ep": 6, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00148.png", "ep": 6, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00150.png", "ep": 6, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00152.png", "ep": 6, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00154.png", "ep": 6, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00156.png", "ep": 6, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00158.png", "ep": 6, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00160.png", "ep": 6, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00162.png", "ep": 6, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00164.png", "ep": 6, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00166.png", "ep": 6, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00168.png", "ep": 6, "step": 168, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00170.png", "ep": 6, "step": 170, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00172.png", "ep": 6, "step": 172, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00174.png", "ep": 6, "step": 174, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00176.png", "ep": 6, "step": 176, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00178.png", "ep": 6, "step": 178, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00180.png", "ep": 6, "step": 180, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00182.png", "ep": 6, "step": 182, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00184.png", "ep": 6, "step": 184, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00186.png", "ep": 6, "step": 186, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00188.png", "ep": 6, "step": 188, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00190.png", "ep": 6, "step": 190, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00192.png", "ep": 6, "step": 192, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00194.png", "ep": 6, "step": 194, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00196.png", "ep": 6, "step": 196, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00198.png", "ep": 6, "step": 198, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00200.png", "ep": 6, "step": 200, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00202.png", "ep": 6, "step": 202, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00204.png", "ep": 6, "step": 204, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00206.png", "ep": 6, "step": 206, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00208.png", "ep": 6, "step": 208, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00210.png", "ep": 6, "step": 210, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00212.png", "ep": 6, "step": 212, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00214.png", "ep": 6, "step": 214, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00216.png", "ep": 6, "step": 216, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00218.png", "ep": 6, "step": 218, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00220.png", "ep": 6, "step": 220, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00222.png", "ep": 6, "step": 222, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00224.png", "ep": 6, "step": 224, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00226.png", "ep": 6, "step": 226, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00228.png", "ep": 6, "step": 228, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00230.png", "ep": 6, "step": 230, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00232.png", "ep": 6, "step": 232, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00234.png", "ep": 6, "step": 234, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00236.png", "ep": 6, "step": 236, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00238.png", "ep": 6, "step": 238, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00240.png", "ep": 6, "step": 240, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00242.png", "ep": 6, "step": 242, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00244.png", "ep": 6, "step": 244, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00246.png", "ep": 6, "step": 246, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00248.png", "ep": 6, "step": 248, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00250.png", "ep": 6, "step": 250, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00252.png", "ep": 6, "step": 252, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00254.png", "ep": 6, "step": 254, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00256.png", "ep": 6, "step": 256, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00258.png", "ep": 6, "step": 258, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00260.png", "ep": 6, "step": 260, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00262.png", "ep": 6, "step": 262, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00264.png", "ep": 6, "step": 264, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00266.png", "ep": 6, "step": 266, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00268.png", "ep": 6, "step": 268, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00270.png", "ep": 6, "step": 270, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00272.png", "ep": 6, "step": 272, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00274.png", "ep": 6, "step": 274, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00276.png", "ep": 6, "step": 276, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00278.png", "ep": 6, "step": 278, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00280.png", "ep": 6, "step": 280, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00282.png", "ep": 6, "step": 282, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00284.png", "ep": 6, "step": 284, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00286.png", "ep": 6, "step": 286, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00288.png", "ep": 6, "step": 288, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00290.png", "ep": 6, "step": 290, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00292.png", "ep": 6, "step": 292, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00294.png", "ep": 6, "step": 294, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00296.png", "ep": 6, "step": 296, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00298.png", "ep": 6, "step": 298, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00300.png", "ep": 6, "step": 300, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00302.png", "ep": 6, "step": 302, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep06_step00304.png", "ep": 6, "step": 304, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3967], "drops": [[847, 3938]], "dx": -9, "dy": -29, "dist": 30.4, "direction": "up"}
+{"file": "ep07_step00010.png", "ep": 7, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep07_step00020.png", "ep": 7, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep07_step00030.png", "ep": 7, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep07_step00040.png", "ep": 7, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep07_step00050.png", "ep": 7, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep07_step00060.png", "ep": 7, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep07_step00070.png", "ep": 7, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep07_step00080.png", "ep": 7, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep07_step00090.png", "ep": 7, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep07_step00100.png", "ep": 7, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep07_step00110.png", "ep": 7, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep07_step00120.png", "ep": 7, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep07_step00130.png", "ep": 7, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep07_step00141.png", "ep": 7, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep07_step00144.png", "ep": 7, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [858, 3978], "drops": [[847, 3938]], "dx": -11, "dy": -40, "dist": 41.5, "direction": "up"}
+{"file": "ep07_step00146.png", "ep": 7, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [866, 3986], "drops": [[847, 3938]], "dx": -19, "dy": -48, "dist": 51.6, "direction": "up"}
+{"file": "ep07_step00148.png", "ep": 7, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [874, 3994], "drops": [[847, 3938]], "dx": -27, "dy": -56, "dist": 62.2, "direction": "up-left"}
+{"file": "ep07_step00150.png", "ep": 7, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep07_step00152.png", "ep": 7, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep07_step00154.png", "ep": 7, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep07_step00156.png", "ep": 7, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep07_step00158.png", "ep": 7, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [882, 4002], "drops": [[847, 3938]], "dx": -35, "dy": -64, "dist": 72.9, "direction": "up-left"}
+{"file": "ep07_step00160.png", "ep": 7, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [874, 3994], "drops": [[847, 3938]], "dx": -27, "dy": -56, "dist": 62.2, "direction": "up-left"}
+{"file": "ep07_step00162.png", "ep": 7, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [866, 3986], "drops": [[847, 3938]], "dx": -19, "dy": -48, "dist": 51.6, "direction": "up"}
+{"file": "ep07_step00164.png", "ep": 7, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [862, 3976], "drops": [[847, 3938]], "dx": -15, "dy": -38, "dist": 40.9, "direction": "up"}
+{"file": "ep07_step00166.png", "ep": 7, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3973], "drops": [[847, 3938]], "dx": -9, "dy": -35, "dist": 36.1, "direction": "up"}
+{"file": "ep07_step00168.png", "ep": 7, "step": 168, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3961], "drops": [[847, 3938]], "dx": -9, "dy": -23, "dist": 24.7, "direction": "up"}
+{"file": "ep07_step00170.png", "ep": 7, "step": 170, "mode": "scripted", "phase": "key_onscreen", "link": [852, 3951], "drops": [[847, 3938]], "dx": -5, "dy": -13, "dist": 13.9, "direction": "on-link"}
+{"file": "ep08_step00010.png", "ep": 8, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep08_step00020.png", "ep": 8, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep08_step00030.png", "ep": 8, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep08_step00040.png", "ep": 8, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep08_step00050.png", "ep": 8, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep08_step00060.png", "ep": 8, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep08_step00070.png", "ep": 8, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep08_step00080.png", "ep": 8, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep08_step00090.png", "ep": 8, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep08_step00100.png", "ep": 8, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep08_step00110.png", "ep": 8, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep08_step00120.png", "ep": 8, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep08_step00130.png", "ep": 8, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep08_step00141.png", "ep": 8, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep08_step00144.png", "ep": 8, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [847, 3983], "drops": [[847, 3938]], "dx": 0, "dy": -45, "dist": 45.0, "direction": "up"}
+{"file": "ep08_step00146.png", "ep": 8, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3994], "drops": [[847, 3938]], "dx": -1, "dy": -56, "dist": 56.0, "direction": "up"}
+{"file": "ep08_step00148.png", "ep": 8, "step": 148, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4006], "drops": [[847, 3938]], "dx": -1, "dy": -68, "dist": 68.0, "direction": "up"}
+{"file": "ep08_step00152.png", "ep": 8, "step": 152, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00156.png", "ep": 8, "step": 156, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00160.png", "ep": 8, "step": 160, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00164.png", "ep": 8, "step": 164, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00168.png", "ep": 8, "step": 168, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00172.png", "ep": 8, "step": 172, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00176.png", "ep": 8, "step": 176, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00180.png", "ep": 8, "step": 180, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00184.png", "ep": 8, "step": 184, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00188.png", "ep": 8, "step": 188, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00192.png", "ep": 8, "step": 192, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00196.png", "ep": 8, "step": 196, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00200.png", "ep": 8, "step": 200, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00204.png", "ep": 8, "step": 204, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00208.png", "ep": 8, "step": 208, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00212.png", "ep": 8, "step": 212, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00216.png", "ep": 8, "step": 216, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00220.png", "ep": 8, "step": 220, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00224.png", "ep": 8, "step": 224, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00228.png", "ep": 8, "step": 228, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00232.png", "ep": 8, "step": 232, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00236.png", "ep": 8, "step": 236, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00240.png", "ep": 8, "step": 240, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep08_step00244.png", "ep": 8, "step": 244, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4008], "drops": [[847, 3938]], "dx": -1, "dy": -70, "dist": 70.0, "direction": "up"}
+{"file": "ep09_step00010.png", "ep": 9, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep09_step00020.png", "ep": 9, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep09_step00030.png", "ep": 9, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep09_step00040.png", "ep": 9, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep09_step00050.png", "ep": 9, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep09_step00060.png", "ep": 9, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep09_step00070.png", "ep": 9, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep09_step00080.png", "ep": 9, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep09_step00090.png", "ep": 9, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep09_step00100.png", "ep": 9, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep09_step00110.png", "ep": 9, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep09_step00120.png", "ep": 9, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep09_step00130.png", "ep": 9, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep09_step00141.png", "ep": 9, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep09_step00144.png", "ep": 9, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [847, 3983], "drops": [[847, 3938]], "dx": 0, "dy": -45, "dist": 45.0, "direction": "up"}
+{"file": "ep09_step00146.png", "ep": 9, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3994], "drops": [[847, 3938]], "dx": -1, "dy": -56, "dist": 56.0, "direction": "up"}
+{"file": "ep09_step00148.png", "ep": 9, "step": 148, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4006], "drops": [[847, 3938]], "dx": -1, "dy": -68, "dist": 68.0, "direction": "up"}
+{"file": "ep09_step00152.png", "ep": 9, "step": 152, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4006], "drops": [[847, 3938]], "dx": -1, "dy": -68, "dist": 68.0, "direction": "up"}
+{"file": "ep09_step00156.png", "ep": 9, "step": 156, "mode": "scripted", "phase": "key_offscreen", "link": [848, 4006], "drops": [[847, 3938]], "dx": -1, "dy": -68, "dist": 68.0, "direction": "up"}
+{"file": "ep09_step00158.png", "ep": 9, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [848, 4000], "drops": [[847, 3938]], "dx": -1, "dy": -62, "dist": 62.0, "direction": "up"}
+{"file": "ep09_step00160.png", "ep": 9, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3988], "drops": [[847, 3938]], "dx": -1, "dy": -50, "dist": 50.0, "direction": "up"}
+{"file": "ep09_step00162.png", "ep": 9, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3976], "drops": [[847, 3938]], "dx": -1, "dy": -38, "dist": 38.0, "direction": "up"}
+{"file": "ep09_step00164.png", "ep": 9, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3964], "drops": [[847, 3938]], "dx": -1, "dy": -26, "dist": 26.0, "direction": "up"}
+{"file": "ep09_step00166.png", "ep": 9, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3952], "drops": [[847, 3938]], "dx": -1, "dy": -14, "dist": 14.0, "direction": "up"}
+{"file": "ep10_step00010.png", "ep": 10, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep10_step00020.png", "ep": 10, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep10_step00030.png", "ep": 10, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep10_step00040.png", "ep": 10, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep10_step00050.png", "ep": 10, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep10_step00060.png", "ep": 10, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep10_step00070.png", "ep": 10, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep10_step00080.png", "ep": 10, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep10_step00090.png", "ep": 10, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep10_step00100.png", "ep": 10, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep10_step00110.png", "ep": 10, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep10_step00120.png", "ep": 10, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep10_step00130.png", "ep": 10, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep10_step00141.png", "ep": 10, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep10_step00144.png", "ep": 10, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [856, 3955], "drops": [[847, 3938]], "dx": -9, "dy": -17, "dist": 19.2, "direction": "up-left"}
+{"file": "ep10_step00146.png", "ep": 10, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [856, 3943], "drops": [[847, 3938]], "dx": -9, "dy": -5, "dist": 10.3, "direction": "on-link"}
+{"file": "ep10_step00148.png", "ep": 10, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [860, 3935], "drops": [[847, 3938]], "dx": -13, "dy": 3, "dist": 13.3, "direction": "on-link"}
+{"file": "ep10_step00150.png", "ep": 10, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [870, 3930], "drops": [[847, 3938]], "dx": -23, "dy": 8, "dist": 24.4, "direction": "left"}
+{"file": "ep10_step00152.png", "ep": 10, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [870, 3930], "drops": [[847, 3938]], "dx": -23, "dy": 8, "dist": 24.4, "direction": "left"}
+{"file": "ep10_step00154.png", "ep": 10, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [870, 3930], "drops": [[847, 3938]], "dx": -23, "dy": 8, "dist": 24.4, "direction": "left"}
+{"file": "ep10_step00156.png", "ep": 10, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00158.png", "ep": 10, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00160.png", "ep": 10, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00162.png", "ep": 10, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00164.png", "ep": 10, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00166.png", "ep": 10, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00168.png", "ep": 10, "step": 168, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00170.png", "ep": 10, "step": 170, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00172.png", "ep": 10, "step": 172, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00174.png", "ep": 10, "step": 174, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00176.png", "ep": 10, "step": 176, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00178.png", "ep": 10, "step": 178, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00180.png", "ep": 10, "step": 180, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00182.png", "ep": 10, "step": 182, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00184.png", "ep": 10, "step": 184, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00186.png", "ep": 10, "step": 186, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00188.png", "ep": 10, "step": 188, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00190.png", "ep": 10, "step": 190, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00192.png", "ep": 10, "step": 192, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00194.png", "ep": 10, "step": 194, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00196.png", "ep": 10, "step": 196, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00198.png", "ep": 10, "step": 198, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00200.png", "ep": 10, "step": 200, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00202.png", "ep": 10, "step": 202, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00204.png", "ep": 10, "step": 204, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00206.png", "ep": 10, "step": 206, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00208.png", "ep": 10, "step": 208, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00210.png", "ep": 10, "step": 210, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00212.png", "ep": 10, "step": 212, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00214.png", "ep": 10, "step": 214, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00216.png", "ep": 10, "step": 216, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00218.png", "ep": 10, "step": 218, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00220.png", "ep": 10, "step": 220, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00222.png", "ep": 10, "step": 222, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00224.png", "ep": 10, "step": 224, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00226.png", "ep": 10, "step": 226, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00228.png", "ep": 10, "step": 228, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00230.png", "ep": 10, "step": 230, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00232.png", "ep": 10, "step": 232, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00234.png", "ep": 10, "step": 234, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00236.png", "ep": 10, "step": 236, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00238.png", "ep": 10, "step": 238, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00240.png", "ep": 10, "step": 240, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00242.png", "ep": 10, "step": 242, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00244.png", "ep": 10, "step": 244, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00246.png", "ep": 10, "step": 246, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00248.png", "ep": 10, "step": 248, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00250.png", "ep": 10, "step": 250, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00252.png", "ep": 10, "step": 252, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00254.png", "ep": 10, "step": 254, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00256.png", "ep": 10, "step": 256, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00258.png", "ep": 10, "step": 258, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00260.png", "ep": 10, "step": 260, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00262.png", "ep": 10, "step": 262, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00264.png", "ep": 10, "step": 264, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00266.png", "ep": 10, "step": 266, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00268.png", "ep": 10, "step": 268, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00270.png", "ep": 10, "step": 270, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00272.png", "ep": 10, "step": 272, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00274.png", "ep": 10, "step": 274, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00276.png", "ep": 10, "step": 276, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00278.png", "ep": 10, "step": 278, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00280.png", "ep": 10, "step": 280, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00282.png", "ep": 10, "step": 282, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00284.png", "ep": 10, "step": 284, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00286.png", "ep": 10, "step": 286, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00288.png", "ep": 10, "step": 288, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00290.png", "ep": 10, "step": 290, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00292.png", "ep": 10, "step": 292, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00294.png", "ep": 10, "step": 294, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00296.png", "ep": 10, "step": 296, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00298.png", "ep": 10, "step": 298, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00300.png", "ep": 10, "step": 300, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00302.png", "ep": 10, "step": 302, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep10_step00304.png", "ep": 10, "step": 304, "mode": "scripted", "phase": "key_onscreen", "link": [878, 3922], "drops": [[847, 3938]], "dx": -31, "dy": 16, "dist": 34.9, "direction": "down-left"}
+{"file": "ep11_step00010.png", "ep": 11, "step": 10, "mode": "scripted", "phase": "control", "link": [873, 3936], "drops": []}
+{"file": "ep11_step00020.png", "ep": 11, "step": 20, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep11_step00030.png", "ep": 11, "step": 30, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep11_step00040.png", "ep": 11, "step": 40, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep11_step00050.png", "ep": 11, "step": 50, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep11_step00060.png", "ep": 11, "step": 60, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep11_step00070.png", "ep": 11, "step": 70, "mode": "scripted", "phase": "control", "link": [879, 3936], "drops": []}
+{"file": "ep11_step00080.png", "ep": 11, "step": 80, "mode": "scripted", "phase": "control", "link": [877, 3912], "drops": []}
+{"file": "ep11_step00090.png", "ep": 11, "step": 90, "mode": "scripted", "phase": "control", "link": [862, 3936], "drops": []}
+{"file": "ep11_step00100.png", "ep": 11, "step": 100, "mode": "scripted", "phase": "control", "link": [853, 3939], "drops": []}
+{"file": "ep11_step00110.png", "ep": 11, "step": 110, "mode": "scripted", "phase": "control", "link": [853, 3945], "drops": []}
+{"file": "ep11_step00120.png", "ep": 11, "step": 120, "mode": "scripted", "phase": "control", "link": [853, 3941], "drops": []}
+{"file": "ep11_step00130.png", "ep": 11, "step": 130, "mode": "scripted", "phase": "control", "link": [853, 3947], "drops": []}
+{"file": "ep11_step00141.png", "ep": 11, "step": 141, "mode": "scripted", "phase": "death_anim", "link": [847, 3967], "drops": [[847, 3938]], "dx": 0, "dy": -29, "dist": 29.0, "direction": "up"}
+{"file": "ep11_step00144.png", "ep": 11, "step": 144, "mode": "scripted", "phase": "death_anim", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00146.png", "ep": 11, "step": 146, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00148.png", "ep": 11, "step": 148, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00150.png", "ep": 11, "step": 150, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00152.png", "ep": 11, "step": 152, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00154.png", "ep": 11, "step": 154, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00156.png", "ep": 11, "step": 156, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00158.png", "ep": 11, "step": 158, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00160.png", "ep": 11, "step": 160, "mode": "scripted", "phase": "key_onscreen", "link": [832, 3967], "drops": [[847, 3938]], "dx": 15, "dy": -29, "dist": 32.6, "direction": "up-right"}
+{"file": "ep11_step00162.png", "ep": 11, "step": 162, "mode": "scripted", "phase": "key_onscreen", "link": [840, 3959], "drops": [[847, 3938]], "dx": 7, "dy": -21, "dist": 22.1, "direction": "up"}
+{"file": "ep11_step00164.png", "ep": 11, "step": 164, "mode": "scripted", "phase": "key_onscreen", "link": [844, 3949], "drops": [[847, 3938]], "dx": 3, "dy": -11, "dist": 11.4, "direction": "on-link"}
+{"file": "ep11_step00166.png", "ep": 11, "step": 166, "mode": "scripted", "phase": "key_onscreen", "link": [848, 3943], "drops": [[847, 3938]], "dx": -1, "dy": -5, "dist": 5.1, "direction": "on-link"}

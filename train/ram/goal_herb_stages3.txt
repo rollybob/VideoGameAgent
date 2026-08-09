@@ -1,0 +1,5 @@
+STAGE: You are at the pub. Open the Missions list, select the "Herb Picking" mission, and accept it (choose Yes when asked to accept the conditions). Navigate menus with the d-pad and confirm with A.
+STAGE: Leave the pub and return to the world map.
+STAGE: You are on the world map with the mission accepted. Press Start ONE time to open the menu, move the cursor to "Area List", and press A to open it.
+STAGE: The Area List is open (it lists places such as Cyril, Sprohm, Giza Plains). Move the cursor DOWN to "Giza Plains" and press A to choose it as your destination.
+STAGE: You have already chosen Giza Plains. The screen now shows your caravan on the world map with a route to the destination. This view LOOKS like the idle world map, but a destination is already selected and you are one button from travelling. Do NOT press Start here - Start would cancel and reopen the menu. Press A ONE time to confirm and begin travelling, then choose "wait" while the caravan walks to Giza Plains.

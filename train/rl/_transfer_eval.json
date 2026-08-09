@@ -1,0 +1,70 @@
+{
+  "base": {
+    "room4": {
+      "killed": 4,
+      "complete": 1,
+      "n": 16
+    },
+    "room2": {
+      "killed": 0,
+      "complete": 0,
+      "n": 16
+    },
+    "room0_ctrl": {
+      "killed": 1,
+      "complete": 0,
+      "n": 16
+    }
+  },
+  "rung1": {
+    "room4": {
+      "killed": 3,
+      "complete": 1,
+      "n": 16
+    },
+    "room2": {
+      "killed": 0,
+      "complete": 0,
+      "n": 16
+    },
+    "room0_ctrl": {
+      "killed": 1,
+      "complete": 0,
+      "n": 16
+    }
+  },
+  "rung2": {
+    "room4": {
+      "killed": 8,
+      "complete": 6,
+      "n": 16
+    },
+    "room2": {
+      "killed": 15,
+      "complete": 3,
+      "n": 16
+    },
+    "room0_ctrl": {
+      "killed": 8,
+      "complete": 0,
+      "n": 16
+    }
+  },
+  "rung3": {
+    "room4": {
+      "killed": 6,
+      "complete": 2,
+      "n": 16
+    },
+    "room2": {
+      "killed": 13,
+      "complete": 11,
+      "n": 16
+    },
+    "room0_ctrl": {
+      "killed": 7,
+      "complete": 0,
+      "n": 16
+    }
+  }
+}

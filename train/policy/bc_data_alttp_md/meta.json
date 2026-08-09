@@ -1,0 +1,34 @@
+{
+ "components": [
+  "dir",
+  "A",
+  "B",
+  "L",
+  "R"
+ ],
+ "nvec": [
+  9,
+  2,
+  2,
+  2,
+  2
+ ],
+ "dir_names": [
+  "none",
+  "U",
+  "D",
+  "L",
+  "R",
+  "NE",
+  "NW",
+  "SE",
+  "SW"
+ ],
+ "img_h": 160,
+ "img_w": 240,
+ "frame_skip": 4,
+ "stack_k": 4,
+ "channels": 12,
+ "n_tapes": 8,
+ "label_agg": "dir=modal/window; A/B/L/R=held>=half-window"
+}

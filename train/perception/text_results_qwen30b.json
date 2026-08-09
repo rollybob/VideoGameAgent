@@ -1,0 +1,51 @@
+[
+ {
+  "file": "text_frames/t004.png",
+  "gt": "Long ago, in Hyrule, a beautiful kingdom surrounded by forests and mountains...",
+  "pred": "Long ago, in Hyrule, a beautiful kingdom surrounded by forests and mountains...",
+  "char_sim": 1.0,
+  "word_recall": 1.0
+ },
+ {
+  "file": "text_frames/t010.png",
+  "gt": "legends told of an omnipotent and omniscient Golden Power that lay hidden.",
+  "pred": "legends told of an omnipotent and omniscient Golden Power that lay hidden.",
+  "char_sim": 1.0,
+  "word_recall": 1.0
+ },
+ {
+  "file": "text_frames/t014.png",
+  "gt": "that lay hidden. It was hidden in a sacred realm beyond the reach of men,",
+  "pred": "that lay hidden. It was hidden in a sacred realm beyond the reach of men,",
+  "char_sim": 1.0,
+  "word_recall": 1.0
+ },
+ {
+  "file": "text_frames/t021.png",
+  "gt": "...a doorway to that realm was suddenly opened... Hoping to claim the Gold",
+  "pred": "...a doorway to that realm was suddenly opened... Hoping to claim the Gold",
+  "char_sim": 1.0,
+  "word_recall": 1.0
+ },
+ {
+  "file": "text_frames/t025.png",
+  "gt": "Power as their own, the people began to quarrel and fight...",
+  "pred": "Power as their own, the people began to quarrel and fight...",
+  "char_sim": 1.0,
+  "word_recall": 1.0
+ },
+ {
+  "file": "text_frames/t031.png",
+  "gt": "Many sought to enter the hidden Golden Land... But none returned, and",
+  "pred": "Many sought to enter the hidden Golden Land... But none returned, and",
+  "char_sim": 1.0,
+  "word_recall": 1.0
+ },
+ {
+  "file": "text_frames/t038.png",
+  "gt": "But none returned, and instead evil power began to issue forth from the dark portal...",
+  "pred": "But none returned, and instead evil power began to issue forth from the dark portal...",
+  "char_sim": 1.0,
+  "word_recall": 1.0
+ }
+]

@@ -1,0 +1,51 @@
+{
+  "room0": {
+    "n": 12,
+    "killed": 12,
+    "keyed": 0,
+    "no_kill": 0,
+    "death_events": 0
+  },
+  "room1": {
+    "n": 12,
+    "killed": 12,
+    "keyed": 0,
+    "no_kill": 0,
+    "death_events": 0
+  },
+  "room2": {
+    "n": 12,
+    "killed": 12,
+    "keyed": 12,
+    "no_kill": 0,
+    "death_events": 0
+  },
+  "room3": {
+    "n": 12,
+    "killed": 3,
+    "keyed": 0,
+    "no_kill": 9,
+    "death_events": 9
+  },
+  "room4": {
+    "n": 12,
+    "killed": 12,
+    "keyed": 11,
+    "no_kill": 0,
+    "death_events": 0
+  },
+  "room5": {
+    "n": 12,
+    "killed": 0,
+    "keyed": 0,
+    "no_kill": 12,
+    "death_events": 0
+  },
+  "room6": {
+    "n": 12,
+    "killed": 0,
+    "keyed": 0,
+    "no_kill": 12,
+    "death_events": 0
+  }
+}

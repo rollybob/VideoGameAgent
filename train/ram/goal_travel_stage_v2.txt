@@ -1,0 +1,6 @@
+You are on the world map and must travel to Giza Plains. Follow this exact procedure:
+1. Press Start ONE time to open the menu.
+2. The menu lists Party, Area List, System. Press Down to highlight "Area List", then press A.
+3. The Area List shows Cyril, Sprohm, Giza Plains. Press Down until "Giza Plains" is highlighted, then press A.
+4. Press A once more to confirm, then your party begins walking there.
+IMPORTANT: Once any menu is open, do NOT press Start again - Start closes the menu. Inside menus use ONLY the d-pad and the A button. After confirming, choose "wait" while your party walks to Giza.

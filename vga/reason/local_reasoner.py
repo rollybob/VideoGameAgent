@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import base64
 import json
+import os
 import urllib.error
 import urllib.request
 
@@ -69,6 +70,16 @@ class LocalVlmReasoner:
             "mode": context.mode,
             "skills": context.skills,
             "knowledge": context.knowledge,
+            "committed": context.committed,
+            # Durable RAM-taught task-state phase directive (Task 07). Authoritative "you have
+            # already accepted; now travel" context that survives the scratchpad wipe. Empty
+            # unless the phase machine is active AND has advanced. See plugin.py / serve_vlm.py.
+            "task_phase": context.task_phase,
+            # Reproducible-eval seed salt: mixed into the server's per-input RNG seed so the SAME
+            # state yields a DIFFERENT-but-reproducible trajectory per salt. Lets a ladder run N
+            # seeds/arm to separate a real mechanism effect from single-seed luck. Empty (default)
+            # => byte-identical to the un-salted seed (appending "" is a no-op). Set VGA_SEED_SALT.
+            "seed_salt": os.environ.get("VGA_SEED_SALT", ""),
         }).encode()
         req = urllib.request.Request(
             self.url + "/act", data=payload, headers={"Content-Type": "application/json"})
@@ -86,6 +97,11 @@ class LocalVlmReasoner:
                 "model": "local-vlm",
                 "button": button,
                 "repeats": repeats,
+                # The model's one-sentence rationale. Also on ReasonerDecision.reason, but the
+                # oracle rollout logger reads meta["reason"] - without this key it logged EMPTY
+                # reasons for every step (pre-existing gap found Task 01, 2026-07-04), blinding
+                # trajectory diagnosis to WHY the agent acted. Mirror it into meta so it is logged.
+                "reason": reason,
                 "latency_s": resp.get("latency_s"),
                 "raw": resp.get("raw"),
                 # Goal/task-state scratchpad the model authored this step (layer b).
@@ -93,6 +109,12 @@ class LocalVlmReasoner:
                 "progress": resp.get("progress", ""),
                 # Screen mode the model classified this step (keys skill retrieval next step).
                 "mode": resp.get("mode", ""),
+                # Perception-first menu observation: the option the model reports as highlighted.
+                "highlighted": resp.get("highlighted", ""),
+                # Objective scene descriptor (Task 03B): the plugin carries this forward one step
+                # and folds it into the retrieval context so learned facts/skills route by scene
+                # CONTENT, not a bare one-word mode. See vga/reason/plugin.py:_last_scene.
+                "scene": resp.get("scene", ""),
                 # Tutorial-learning: did the model flag this as an instructional screen?
                 "is_tutorial": bool(resp.get("is_tutorial", False)),
             },

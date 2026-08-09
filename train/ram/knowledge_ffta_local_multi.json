@@ -1,0 +1,56 @@
+[
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Navigate via Area List",
+    "text": "Select 'Area List' to access map regions like 'Giza Plains'.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 2367,
+    "created": 1783277881.615742
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Confirm Location Selection",
+    "text": "Press 'A' on the highlighted location to confirm travel.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 1792,
+    "created": 1783277881.6161025
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Use Party Menu for Navigation",
+    "text": "The 'Party' menu can reveal navigation options like 'Area List'.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 486,
+    "created": 1783277881.6164443
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Accept Mission from Pub",
+    "text": "Select mission option to accept a quest.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 1912,
+    "created": 1783278148.8426774
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Navigate Mission List",
+    "text": "Scroll down mission list to find and select desired mission.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 578,
+    "created": 1783278148.8432865
+  },
+  {
+    "game": "final fantasy tactics advance (e)(surplus)",
+    "topic": "Confirm Mission Selection",
+    "text": "Press start to confirm and lock in mission acceptance.",
+    "source": "experience-local",
+    "confidence": 0.7,
+    "uses": 342,
+    "created": 1783278148.843872
+  }
+]
