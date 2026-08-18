@@ -94,10 +94,8 @@ _*.png
 **/_*.png
 train/rl/scratch/
 train/rl/distill_data/
-# Underscore-prefixed scratch scripts + scratch dirs (one-off probes/dev tools).
-# _[a-z]* matches single-underscore scratch (_alttp_*, _enemy_eyes, ...) but NOT
+# Underscore-prefixed scratch (scripts, dirs, probe outputs -- any extension). _[a-z]*
+# matches single-underscore scratch (_alttp_*, _smoke_*.sh, _eyes/, ...) but NOT
 # double-underscore dunders (__init__.py, __main__.py), which must stay tracked.
-_[a-z]*.py
-**/_[a-z]*.py
-_[a-z]*/
-**/_[a-z]*/
+_[a-z]*
+**/_[a-z]*
