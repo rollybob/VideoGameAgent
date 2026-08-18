@@ -15,7 +15,7 @@ VLM runs async (~9s/call) so gameplay never freezes. Segmented (rebuild core eve
 to dodge the mgba long-run segfault. Real-time throttle. PIL overlay -> JPEG frames -> host ffmpeg
 (run_drive.sh). Run in thor-rl:cu130 with the VLM up on 127.0.0.1:8077.
 """
-import os, sys, io, re, json, time, base64, threading, subprocess, traceback, warnings
+import os, sys, io, re, json, time, base64, threading, subprocess, traceback, warnings, difflib
 warnings.filterwarnings("ignore")
 import numpy as np
 ROOT = "/work"
@@ -59,6 +59,22 @@ GOAL = ("You are controlling the hero in The Legend of Zelda: A Link to the Past
         "single best next button.")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 
+# Pixel-vs-RAM scoring sidecar (2026-08-18). The agent sees only the PIXELS reading; RAM
+# extract_text is logged beside it as the eval ORACLE. Decisions where the two agree (high
+# ratio) are the box-present set -> live CER of the pixels reader. Fresh per run.
+_TEXTLOG = os.path.join(os.path.dirname(OUT), "pixel_vs_ram.jsonl")
+open(_TEXTLOG, "w").close()
+
+
+def _log_pix_ram(step, pix, ram):
+    """Append one scoring record when either reader has text (skip the no-text majority)."""
+    if not (pix or ram):
+        return
+    rec = {"step": step, "pix": pix, "ram": ram,
+           "ratio": round(difflib.SequenceMatcher(None, pix.lower(), ram.lower()).ratio(), 3)}
+    with open(_TEXTLOG, "a") as fh:
+        fh.write(json.dumps(rec) + "\n")
+
 
 def notify(msg):
     try:
@@ -73,6 +89,15 @@ from train_detector import Net, to_in
 from eval_detector import peak_single, peaks_multi
 DEV = "cuda"
 net = Net().to(DEV); net.load_state_dict(torch.load(DET_PT, map_location=DEV)); net.eval()
+
+# ---- pixels-only text reader (north-star: read on-screen text from PIXELS, not RAM) ----
+# ckpt_alttp CRNN, taught by the RAM oracle (extract_text). This REPLACES ram_text.extract_text
+# as the agent's on-screen-message source; RAM stays only as the scoring oracle (pixel_vs_ram
+# sidecar). Offline-validated 2026-08-18: per-line CER 0.032. Tiny model (~ms/line) -> negligible
+# vs the 15fps loop. ~95% char-acc but NOT a box detector: on no-box frames it may still read
+# stray scenery text -- the sidecar reveals that, and a learned box gate is the follow-up.
+from pixel_text import PixelReader
+pixreader = PixelReader(device=DEV)
 
 
 LINK_THR = 0.5   # peak_single is argmax-ALWAYS (no threshold) -> on rain/OOD frames the "peak" is
@@ -506,13 +531,15 @@ def main():
         if entered_game and drv not in ("MENU", "GAMEOVER"):  # record the decision's outcome in the room log
             mem.note(room, note_btn if note_btn is not None else last_btn, moving, step,
                      edge=sweep_edge)
+        pix = pixreader.read_message(frame)                  # PIXELS -> the agent (north-star: read the screen)
+        _log_pix_ram(step, pix, extract_text(core))          # RAM extract_text kept only as the scoring ORACLE
         with lock:
             shared.update(frame=frame, det=(link, en, it), step=step,
                           last_btn=last_btn, last_changed=moved_since_vlm,
                           stuck=(esc_lvl >= 1 or stuck_run > 0 or escaping),   # v2 fix: escalation IS stuck (jiggle no longer masks it)
                           brief=(mem.brief(room) if entered_game else ""),
                           receipts=(mem.receipts() if entered_game else []),
-                          dialog=extract_text(core))          # on-screen message text -> /act dialog_text (2026-08-10)
+                          dialog=pix)                          # pixels-only reading (was extract_text(core), the RAM sensor)
         for _ in range(FRAME_SKIP):
             core.set_keys(raw=mask); core.run_frame()
         stack = stack[1:] + [grab(img, w, h)]
