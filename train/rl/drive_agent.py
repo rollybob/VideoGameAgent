@@ -64,14 +64,20 @@ os.makedirs(os.path.dirname(OUT), exist_ok=True)
 # ratio) are the box-present set -> live CER of the pixels reader. Fresh per run.
 _TEXTLOG = os.path.join(os.path.dirname(OUT), "pixel_vs_ram.jsonl")
 open(_TEXTLOG, "w").close()
+# Per-VLM-call decisions {step, button, subgoal, reason} -- the full (untruncated) subgoal, so the
+# hint-persistence A/B can measure whether a retained objective keeps showing up in the agent's intent.
+_VLMLOG = os.path.join(os.path.dirname(OUT), "vlm_decisions.jsonl")
+open(_VLMLOG, "w").close()
 
 
-def _log_pix_ram(step, pix, ram):
-    """Append one scoring record when either reader has text (skip the no-text majority)."""
-    if not (pix or ram):
+def _log_pix_ram(step, pix, ram, recent=None):
+    """Append one record when any of pix/ram/retained-hints has text (skip the no-text majority).
+    `recent` = the hints active this decision -> the retention timeline for the A/B analysis."""
+    if not (pix or ram or recent):
         return
     rec = {"step": step, "pix": pix, "ram": ram,
-           "ratio": round(difflib.SequenceMatcher(None, pix.lower(), ram.lower()).ratio(), 3)}
+           "ratio": round(difflib.SequenceMatcher(None, pix.lower(), ram.lower()).ratio(), 3),
+           "recent": recent or []}
     with open(_TEXTLOG, "a") as fh:
         fh.write(json.dumps(rec) + "\n")
 
@@ -98,6 +104,15 @@ net = Net().to(DEV); net.load_state_dict(torch.load(DET_PT, map_location=DEV)); 
 # stray scenery text -- the sidecar reveals that, and a learned box gate is the follow-up.
 from pixel_text import PixelReader
 pixreader = PixelReader(device=DEV)
+
+# ---- hint persistence (2026-08-18): retain on-screen messages past the box closing ----
+# HintMemory assembles whole messages from the per-decision pixel reads and keeps the last few so
+# the agent can keep pursuing a destination it was told about (e.g. the castle) after the box is
+# gone. A/B: HINT_PERSIST=0 makes it inert (baseline). Minimal by design -- soft prompt injection,
+# no LLM distiller yet; measure before adding one (heeding the Task-07 durable-memory caveat).
+HINT_PERSIST = os.environ.get("HINT_PERSIST", "0") == "1"   # default OFF: mechanism proven (retention)
+from hint_memory import HintMemory
+hintmem = HintMemory(enabled=HINT_PERSIST)
 
 
 LINK_THR = 0.5   # peak_single is argmax-ALWAYS (no threshold) -> on rain/OOD frames the "peak" is
@@ -210,7 +225,7 @@ lock = threading.Lock(); stop_flag = threading.Event()
 hist = []
 
 
-def post_act(frame, det, step, last_btn, last_changed, stuck, brief="", receipts=None, dialog="", already_read=False):
+def post_act(frame, det, step, last_btn, last_changed, stuck, brief="", receipts=None, dialog="", already_read=False, recent=None):
     (lx, ly), en, it = det
     ctx = f"Perception: Link@({lx},{ly}); enemies={[tuple(map(int,e)) for e in en[:3]]}."
     b = io.BytesIO()
@@ -224,7 +239,8 @@ def post_act(frame, det, step, last_btn, last_changed, stuck, brief="", receipts
                "step": step, "history": hist[-6:], "last_action": last_btn,
                "last_changed": bool(last_changed), "looping": bool(stuck),
                "task_phase": brief, "skills": receipts or [],
-               "dialog_text": dialog, "already_read": bool(already_read)}
+               "dialog_text": dialog, "already_read": bool(already_read),
+               "recent_messages": recent or []}
     req = urllib.request.Request(VLM + "/act", data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=90) as r:
@@ -288,12 +304,13 @@ def vlm_worker():
             det, stp, lb, lc, st = shared["det"], shared["step"], shared["last_btn"], shared["last_changed"], shared["stuck"]
             brief, rcpt = shared.get("brief", ""), shared.get("receipts", [])
             dlg = shared.get("dialog", "")
+            rec = shared.get("recent", [])
         if fr is None:
             time.sleep(0.2); continue
         already = (dlg != "" and dlg == last_dlg)             # same message across calls -> "already read"
         try:
             _t = time.time()
-            j = post_act(fr, det, stp, lb, lc, st, brief=brief, receipts=rcpt, dialog=dlg, already_read=already)
+            j = post_act(fr, det, stp, lb, lc, st, brief=brief, receipts=rcpt, dialog=dlg, already_read=already, recent=rec)
             btn = str(j.get("button", "wait")).lower()
             with lock:
                 directive.update(button=btn if btn in BTN else "wait",
@@ -301,6 +318,9 @@ def vlm_worker():
                                  n=directive["n"] + 1)
             hist.append({"button": btn, "reason": str(j.get("subgoal", ""))[:40], "changed": bool(lc)})
             print(f"[vlm] #{directive['n']} {time.time()-_t:.1f}s -> {btn} moved={lc} stuck={st} {str(j.get('subgoal',''))[:32]!r}", flush=True)
+            with open(_VLMLOG, "a") as _fh:
+                _fh.write(json.dumps({"step": stp, "button": btn,
+                                      "subgoal": str(j.get("subgoal", "")), "reason": str(j.get("reason", ""))}) + "\n")
             last_dlg = dlg
         except Exception as e:
             print(f"[vlm] ERROR {str(e)[:90]}", flush=True)
@@ -532,14 +552,16 @@ def main():
             mem.note(room, note_btn if note_btn is not None else last_btn, moving, step,
                      edge=sweep_edge)
         pix = pixreader.read_message(frame)                  # PIXELS -> the agent (north-star: read the screen)
-        _log_pix_ram(step, pix, extract_text(core))          # RAM extract_text kept only as the scoring ORACLE
+        hintmem.observe(pix, step)                            # assemble + retain messages past box-close
+        recent = hintmem.active(step)                         # hints to surface this decision ([] if HINT_PERSIST=0)
+        _log_pix_ram(step, pix, extract_text(core), recent)  # RAM extract_text = scoring ORACLE; recent = retention timeline
         with lock:
             shared.update(frame=frame, det=(link, en, it), step=step,
                           last_btn=last_btn, last_changed=moved_since_vlm,
                           stuck=(esc_lvl >= 1 or stuck_run > 0 or escaping),   # v2 fix: escalation IS stuck (jiggle no longer masks it)
                           brief=(mem.brief(room) if entered_game else ""),
                           receipts=(mem.receipts() if entered_game else []),
-                          dialog=pix)                          # pixels-only reading (was extract_text(core), the RAM sensor)
+                          dialog=pix, recent=recent)           # pixels reading + retained hints -> /act
         for _ in range(FRAME_SKIP):
             core.set_keys(raw=mask); core.run_frame()
         stack = stack[1:] + [grab(img, w, h)]

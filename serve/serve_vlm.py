@@ -71,6 +71,10 @@ INCLUDE_GOALS = os.environ.get("INCLUDE_GOALS", "1") not in ("0", "false", "Fals
 # facts the agent has LEARNED from this game's tutorials (host-side KnowledgeStore), and the
 # model flags instructional screens via is_tutorial so the host can read+distill+store them.
 INCLUDE_KNOWLEDGE = os.environ.get("INCLUDE_KNOWLEDGE", "1") not in ("0", "false", "False", "")
+# Hint persistence (2026-08-18): retain recent on-screen MESSAGES past the box closing so the
+# agent can keep pursuing a destination it was told about while walking. The host (drive_agent
+# HintMemory) supplies them; render as possibly-stale background, not on-screen fact.
+INCLUDE_RECENT = os.environ.get("INCLUDE_RECENT", "1") not in ("0", "false", "False", "")
 # Sharpened, always-on MENU-vs-DIALOGUE perception rule (2026-07-02). The gated skill store
 # failed because the model mislabels menus as dialogue (calls the pub Rumors menu 'dialog'
 # and mashes A), so the menu-cursor skill never fired. This puts the decision-linked rule in
@@ -209,10 +213,28 @@ def _knowledge_lines(knowledge: list) -> list:
     return lines
 
 
+def _recent_message_lines(recent: list) -> list:
+    """Render messages the game showed recently, retained past the box closing (hint persistence).
+    SAME FRAMING DISCIPLINE as _knowledge_lines: these are POSSIBLY-STALE background -- the box may
+    be long closed and the text may be story/flavor, NOT a fact about the current screen. Surface
+    them only as a reminder of a destination/task the game gave you; act on one only if it still
+    applies to where you are now. Kept soft (not a COMMITTED override) so a mis-retained line can't
+    zombie the agent."""
+    if not recent:
+        return []
+    lines = ["MESSAGES THE GAME SHOWED YOU RECENTLY (the box may have closed - these are reminders, "
+             "NOT what is on screen now; some may be story/flavor). If one names a place to go or a "
+             "task and it still applies where you are, pursue it; otherwise ignore it:"]
+    for i, m in enumerate(recent[:3], 1):
+        lines.append(f'  ({i}) "{str(m)}"')
+    return lines
+
+
 def _instruction(goal: str, step: int, last_action: str,
                  last_changed=None, history=None, looping=False,
                  dialog_text="", already_read=False, subgoal="", progress="",
-                 mode="", skills=None, knowledge=None, committed="", task_phase="") -> str:
+                 mode="", skills=None, knowledge=None, committed="", task_phase="",
+                 recent_messages=None) -> str:
     lines = [f"Step {step}. This is the current screen."]
     if goal:
         lines.append(f"Objective: {goal}")
@@ -243,6 +265,8 @@ def _instruction(goal: str, step: int, last_action: str,
         else:
             msg += " If it is a hint, destination, item, or instruction, make it your next sub-goal."
         lines.append(msg)
+    if INCLUDE_RECENT:
+        lines += _recent_message_lines(recent_messages or [])
     if INCLUDE_GOALS and subgoal:
         # PERCEPTION-FIRST framing. Feeding the model's own prior sub-goal back as fact
         # anchored it: it kept "confirming English" for 158 steps while the screen had long
@@ -517,7 +541,7 @@ def act():
         subgoal=data.get("subgoal", ""), progress=data.get("progress", ""),
         mode=data.get("mode", ""), skills=data.get("skills"),
         knowledge=data.get("knowledge"), committed=data.get("committed", ""),
-        task_phase=data.get("task_phase", ""))
+        task_phase=data.get("task_phase", ""), recent_messages=data.get("recent_messages"))
 
     system_text = SYSTEM_PROMPT + (MENU_RULE if SHARP_MODE else "")
     messages = [
