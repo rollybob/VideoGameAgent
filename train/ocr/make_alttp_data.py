@@ -43,7 +43,13 @@ def extract_lines(ew):
     if any(c.isalpha() for c in s): lines.append(s)
     return lines
 
-def last_ewram(ring):
+def last_ewram(folder):
+    """Last snapshot's EWRAM. Prefer a slimmed ewram.bin (see slim_captures.py) so harvest still
+    works after ring.bin is deleted; else read the ring's last snapshot."""
+    ew_path = os.path.join(folder, "ewram.bin")
+    if os.path.exists(ew_path):
+        return np.fromfile(ew_path, np.uint8, EW)
+    ring = os.path.join(folder, "ring.bin")
     nsnap = os.path.getsize(ring) // SNAP
     with open(ring, "rb") as fh:
         fh.seek((nsnap - 1) * SNAP + IW)
@@ -104,10 +110,11 @@ def ratio(a, b): return difflib.SequenceMatcher(None, a.lower(), b.lower()).rati
 samples = []   # (crop_uint8, label_str)
 n_box = n_nobox = n_align = 0
 for folder in sorted(glob.glob(CAPS + "/*-hit")):
-    mp, rb = folder + "/mark.png", folder + "/ring.bin"
-    if not (os.path.exists(mp) and os.path.exists(rb)): continue
+    mp = folder + "/mark.png"
+    has_ram = os.path.exists(folder + "/ewram.bin") or os.path.exists(folder + "/ring.bin")
+    if not (os.path.exists(mp) and has_ram): continue
     frame = np.array(Image.open(mp).convert("RGB"))
-    ram = extract_lines(last_ewram(rb))
+    ram = extract_lines(last_ewram(folder))
     if not ram or len(ram) > 40: continue     # only a truly huge stale-scrollback blob is unusable
     if not detect_box(frame): n_nobox += 1    # SOFT: find_box+align filter non-text; recovers top boxes
     n_box += 1
