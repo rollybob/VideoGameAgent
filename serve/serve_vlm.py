@@ -230,6 +230,19 @@ def _instruction(goal: str, step: int, last_action: str,
         # belief. Empty (mechanism off / phase not yet advanced) -> this block is absent.
         lines.append("TASK STATE (authoritative - the game state confirms this; trust it over "
                      "your own sub-goal note below): " + str(task_phase))
+    if dialog_text:
+        # On-screen message text, read from the game by the host (2026-08-10 scaffold). The 8B
+        # cannot reliably read GBA dialogue itself (perception-bench), so the host supplies the
+        # EXACT words here as ground truth -- the fix for the agent skipping hints it never read
+        # ("it read nothing", Tim 2026-08-09). This is the most-recent in-game message; treat it
+        # as what the game has told you, and act on any hint/destination/instruction it contains.
+        msg = ('IN-GAME MESSAGE (the game told you this; the host read the exact words for you): '
+               '"' + str(dialog_text) + '".')
+        if already_read:
+            msg += " You have already read this -- do not keep re-reading it; act on it."
+        else:
+            msg += " If it is a hint, destination, item, or instruction, make it your next sub-goal."
+        lines.append(msg)
     if INCLUDE_GOALS and subgoal:
         # PERCEPTION-FIRST framing. Feeding the model's own prior sub-goal back as fact
         # anchored it: it kept "confirming English" for 158 steps while the screen had long

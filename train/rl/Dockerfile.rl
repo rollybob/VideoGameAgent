@@ -18,3 +18,18 @@ RUN python3 -m pip install --no-cache-dir --break-system-packages \
         gymnasium cloudpickle pandas matplotlib tensorboard \
     && python3 -m pip install --no-cache-dir --break-system-packages --no-deps \
         stable-baselines3
+
+# Media/vision deps for the 3-tier drive + eval loop. Previously ABSENT from this image
+# (only PIL was available), which forced the PIL->JPEG->host-ffmpeg workaround in
+# drive_agent.py / run_drive.sh. Bake them in so the container can do frame ops and write
+# mp4 directly:
+#   - ffmpeg (apt): CLI + libav* shared libs (also back cv2/imageio video I/O)
+#   - opencv-python-headless: cv2 without GUI/X libs (correct for a headless container)
+#   - imageio + imageio-ffmpeg: numpy-array <-> video I/O with an ffmpeg backend
+# These pull only numpy/pillow (already in the base) -- no torch/torchvision churn, same
+# resolver caution as the SB3 line above.
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/* \
+    && python3 -m pip install --no-cache-dir --break-system-packages \
+        opencv-python-headless imageio imageio-ffmpeg

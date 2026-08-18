@@ -30,7 +30,7 @@ WALL_CAP_S = MINUTES * 60 * 2.0 + 600
 SEG = 240
 STUCK_K = int(os.environ.get("STUCK_K", "15"))            # decisions of no world-movement before the anti-freeze forces action
 ESC_HOLD = 6                                              # decisions per escape button
-ESC_SWEEP = ["a", "down", "right", "a", "up", "left"]     # anti-freeze rotation: advance dialogs (a) + try each direction
+ESC_SWEEP = ["a", "down", "b", "right", "a", "up", "b", "left"]  # anti-freeze rotation: advance dialogs (a) + SLASH obstacles like bushes (b) + try each direction
 MOVE_TH = 4                                                # world-units over ~6 decisions counts as "moving"
 MENU_HOLD = 6                                              # decisions per button while mashing through menus
 MENU_CYCLE = ["start", "a", "start", "a", "down", "a", "right", "a", "up", "a"]   # advances title/file-select/dialog
@@ -41,15 +41,22 @@ SKIP_MENU = os.environ.get("SKIP_MENU", "0") == "1"       # start already in gam
 ROM = os.path.join(ROOT, "Emulator/mGBA/roms/Legend of Zelda, The - A Link To The Past Four Swords (U) [!].gba")
 S1_CKPT = os.environ.get("S1") or os.path.join(ROOT, "train/rl/runs/alttp_s1v2_scratch04/ppo_alttp_600000_steps.zip")   # `or`: empty-string env (wrapper passthrough) falls back too
 DET_PT = os.path.join(DET_DIR, "detector.pt")
-GOAL = ("You are playing The Legend of Zelda: A Link to the Past on GBA. Objectives in order: "
-        "(1) get through the title screen / any menus by pressing Start or A; (2) you begin INSIDE "
-        "a house -- LEAVE it: walk to the doorway (usually DOWN) to get outside; (3) then EXPLORE "
-        "new areas and look for hidden or secret passages behind walls, bushes, or gaps. CRUCIAL: "
-        "if last_changed is false you are BLOCKED/stuck -- do NOT repeat that button, choose a "
-        "DIFFERENT direction or exit. Prefer reaching NEW areas over re-checking the same spot. "
-        "AVOID 'wait' -- only wait if the screen is clearly black/loading. If you can see the game "
-        "world OR any text box, do NOT wait: MOVE (pick a direction) or press A to advance text. "
-        "Reply with the single best next button.")
+# General prompt (2026-08-09): the earlier version hard-scripted "you are in a house, leave it,
+# press DOWN", and the weak 8B parroted that out of context (said "leave house" in dungeons and
+# overworld). Keep the goal + game mechanics general; let the model read the actual screen instead
+# of leaning on a scripted step. Obstacle-interaction is stated as a PRINCIPLE, not a per-scene script.
+GOAL = ("You are controlling the hero in The Legend of Zelda: A Link to the Past (GBA), a top-down "
+        "action-adventure, using only what you see on screen. Your goal is to make progress by "
+        "EXPLORING: reach rooms and areas you have not visited yet, and keep heading toward new "
+        "territory rather than re-checking places you have already been. You can walk in four "
+        "directions, attack with your sword, and use the action button to interact or advance text. "
+        "Not every obstacle is a wall -- bushes, pots, and enemies can often be cut, moved, or "
+        "defeated to open a path, so if a route looks blocked consider acting on what blocks it "
+        "before turning back. If last_changed is false your last button did nothing (you are "
+        "blocked) -- do NOT repeat it; choose a different direction or action. Only 'wait' if the "
+        "screen is black or loading; if you can see the world or a text box, act. Select and Start "
+        "open menus/the map and do NOT move you -- never use them to explore. Reply with the "
+        "single best next button.")
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 
 
@@ -68,10 +75,14 @@ DEV = "cuda"
 net = Net().to(DEV); net.load_state_dict(torch.load(DET_PT, map_location=DEV)); net.eval()
 
 
+LINK_THR = 0.5   # peak_single is argmax-ALWAYS (no threshold) -> on rain/OOD frames the "peak" is
+                 # noise and drew a green box on rain. Gate on confidence; below it report absent (-1).
+                 # Cosmetic: Link CONTROL reads RAM link_world, not this detection.
 def detect(frame):
     with torch.no_grad():
         hm = net(to_in(frame[None]).to(DEV)).cpu().numpy()[0]
-    return peak_single(hm[0]), peaks_multi(hm[1], thr=0.7), peaks_multi(hm[2], thr=0.6)
+    link = peak_single(hm[0]) if float(hm[0].max()) >= LINK_THR else (-1.0, -1.0)
+    return link, peaks_multi(hm[1], thr=0.7), peaks_multi(hm[2], thr=0.6)
 
 
 # ---- System-1 ---------------------------------------------------------------
@@ -107,6 +118,7 @@ def walker_dir(stack, sx, sy):
 import mgba.core, mgba.image, mgba.gba as gba, mgba.log
 from mgba._pylib import ffi
 from agent_memory import RoomMemory
+from ram_text import extract_text                         # on-screen message text (2026-08-10 comprehension scaffold)
 mgba.log.silence()
 K = gba.GBA
 BIT = {n: 1 << getattr(K, "KEY_" + n) for n in ("A", "B", "SELECT", "START", "RIGHT", "LEFT", "UP", "DOWN", "R", "L")}
@@ -173,7 +185,7 @@ lock = threading.Lock(); stop_flag = threading.Event()
 hist = []
 
 
-def post_act(frame, det, step, last_btn, last_changed, stuck, brief="", receipts=None):
+def post_act(frame, det, step, last_btn, last_changed, stuck, brief="", receipts=None, dialog="", already_read=False):
     (lx, ly), en, it = det
     ctx = f"Perception: Link@({lx},{ly}); enemies={[tuple(map(int,e)) for e in en[:3]]}."
     b = io.BytesIO()
@@ -186,7 +198,8 @@ def post_act(frame, det, step, last_btn, last_changed, stuck, brief="", receipts
     payload = {"image_b64": base64.b64encode(b.getvalue()).decode(), "goal": GOAL + " " + ctx,
                "step": step, "history": hist[-6:], "last_action": last_btn,
                "last_changed": bool(last_changed), "looping": bool(stuck),
-               "task_phase": brief, "skills": receipts or []}
+               "task_phase": brief, "skills": receipts or [],
+               "dialog_text": dialog, "already_read": bool(already_read)}
     req = urllib.request.Request(VLM + "/act", data=json.dumps(payload).encode(),
                                  headers={"Content-Type": "application/json"})
     with urllib.request.urlopen(req, timeout=90) as r:
@@ -222,6 +235,7 @@ def post_point(frame, avoid):
 
 
 def vlm_worker():
+    last_dlg = ""                                            # last on-screen message sent -> set already_read on repeats
     while not stop_flag.is_set():
         with lock:
             treq = shared.pop("tgt_req", None)
@@ -248,11 +262,13 @@ def vlm_worker():
             fr = None if shared["frame"] is None else shared["frame"].copy()
             det, stp, lb, lc, st = shared["det"], shared["step"], shared["last_btn"], shared["last_changed"], shared["stuck"]
             brief, rcpt = shared.get("brief", ""), shared.get("receipts", [])
+            dlg = shared.get("dialog", "")
         if fr is None:
             time.sleep(0.2); continue
+        already = (dlg != "" and dlg == last_dlg)             # same message across calls -> "already read"
         try:
             _t = time.time()
-            j = post_act(fr, det, stp, lb, lc, st, brief=brief, receipts=rcpt)
+            j = post_act(fr, det, stp, lb, lc, st, brief=brief, receipts=rcpt, dialog=dlg, already_read=already)
             btn = str(j.get("button", "wait")).lower()
             with lock:
                 directive.update(button=btn if btn in BTN else "wait",
@@ -260,20 +276,29 @@ def vlm_worker():
                                  n=directive["n"] + 1)
             hist.append({"button": btn, "reason": str(j.get("subgoal", ""))[:40], "changed": bool(lc)})
             print(f"[vlm] #{directive['n']} {time.time()-_t:.1f}s -> {btn} moved={lc} stuck={st} {str(j.get('subgoal',''))[:32]!r}", flush=True)
+            last_dlg = dlg
         except Exception as e:
             print(f"[vlm] ERROR {str(e)[:90]}", flush=True)
             time.sleep(1.0)
         time.sleep(0.2)
 
 
-# ---- overlay + JPEG frames --------------------------------------------------
+# ---- overlay -> mp4 (in-container: imageio/ffmpeg baked into thor-rl) --------
+# Stream overlay frames straight to OUT (.mp4). No JPEG intermediate and no host-side
+# ffmpeg stitch in run_drive.sh -- the container now has imageio+ffmpeg. The canvas is
+# 720x526 (even), so yuv420p is valid; macro_block_size=1 keeps that exact size (no pad).
 from PIL import Image, ImageDraw
+import imageio.v2 as imageio
+import atexit
 Z = 3
-FRAMES = os.path.join(os.path.dirname(OUT), "frames")
-os.makedirs(FRAMES, exist_ok=True)
-for _f in os.listdir(FRAMES):
-    if _f.endswith(".jpg"):
-        os.remove(os.path.join(FRAMES, _f))
+VID = imageio.get_writer(OUT, fps=FPS, codec="libx264", pixelformat="yuv420p", macro_block_size=1)
+_NF = [0]                 # frames written (list -> mutable without `global` in write_overlay)
+_vid_closed = [False]
+def _finalize_video():
+    if not _vid_closed[0]:
+        _vid_closed[0] = True
+        VID.close()
+atexit.register(_finalize_video)   # finalize the mp4 even on early exit / exception
 
 
 def write_overlay(frame, link, en, it, drv, info, idx):
@@ -300,7 +325,7 @@ def write_overlay(frame, link, en, it, drv, info, idx):
     dr2 = ImageDraw.Draw(canvas)
     dr2.text((6, 160 * Z + 5), f"DRIVER:{drv}  nav:{info['nav']}  VLM#{info['n']}:{info['btn']}  moved:{info['moved']}", fill=col)
     dr2.text((6, 160 * Z + 25), (f"goal:{info['subgoal']}")[:80], fill=(225, 225, 225))
-    canvas.save(os.path.join(FRAMES, f"f{idx:06d}.jpg"), quality=80)
+    VID.append_data(np.asarray(canvas)); _NF[0] += 1
 
 
 # ---- main loop --------------------------------------------------------------
@@ -437,9 +462,13 @@ def main():
                 # outcome feeds back into mem's edge stats, so blocked edges rotate out.
                 sweep_edge, sd = mem.sweep_edge(room, step)
                 ph = step % 6
-                if ph == 5:
-                    mask = BTN["a"] if step % 2 == 0 else 0
-                    note_btn = "a"                           # v2 fix: sweep A-taps now land in tried[]
+                if ph == 5:                                  # interact phase: SLASH with the SWORD (b) to
+                    # cut bushes/pots blocking an edge (the (5,5) failure). NEVER A here -- probe confirmed
+                    # A is the ITEM button (fires the equipped torch, magic 28->0; B drains 0). Mashing A
+                    # across 85%-sweep was the magic-empty spam. The old A-tap was dead code (parity:
+                    # ph==5 is always odd) so sword-only loses nothing that ever actually fired.
+                    mask = BTN["b"]
+                    note_btn = "b"
                 else:
                     if ph in (2, 4):
                         sweep_jig ^= 1
@@ -482,7 +511,8 @@ def main():
                           last_btn=last_btn, last_changed=moved_since_vlm,
                           stuck=(esc_lvl >= 1 or stuck_run > 0 or escaping),   # v2 fix: escalation IS stuck (jiggle no longer masks it)
                           brief=(mem.brief(room) if entered_game else ""),
-                          receipts=(mem.receipts() if entered_game else []))
+                          receipts=(mem.receipts() if entered_game else []),
+                          dialog=extract_text(core))          # on-screen message text -> /act dialog_text (2026-08-10)
         for _ in range(FRAME_SKIP):
             core.set_keys(raw=mask); core.run_frame()
         stack = stack[1:] + [grab(img, w, h)]
@@ -504,7 +534,8 @@ def main():
         else:
             nxt = time.time()
     stop_flag.set()
-    nf = len([f for f in os.listdir(FRAMES) if f.endswith(".jpg")])
+    _finalize_video()                  # close the mp4 writer (atexit is the backstop)
+    nf = _NF[0]
     ms = mem.stats()
     drv_names = sorted(set(d for _, _, d in traj))
     drv_code = {d: i for i, d in enumerate(drv_names)}
@@ -513,7 +544,7 @@ def main():
                         y=np.array([t[1] for t in traj], np.int32),
                         drv=np.array([drv_code[t[2]] for t in traj], np.uint8),
                         drv_names=np.array(drv_names))
-    print(f"FRAMES_DONE {nf} frames, {int(time.time()-t0)}s wall, vlm_calls={directive['n']}, final_room={room_cell(core)}, drivers={drv_counts} -> {FRAMES}", flush=True)
+    print(f"FRAMES_DONE {nf} frames, {int(time.time()-t0)}s wall, vlm_calls={directive['n']}, final_room={room_cell(core)}, drivers={drv_counts} -> {OUT}", flush=True)
     print(f"MEM_STATS rooms_visited={ms['rooms_visited']} transitions={ms['transitions']} order={ms['order']}", flush=True)
     for rm, hs in tgt_hist.items():
         print(f"TGT_HIST room {rm}: {hs}", flush=True)
