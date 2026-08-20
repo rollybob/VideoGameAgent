@@ -10,14 +10,18 @@ DET_W="-w /vga/train/perception/detector"
 RL_W="-w /vga/train/rl"
 IMG=thor-rl:cu130
 
-echo "=== [1/5] gen_items (slot3-only relabel) ==="
-$DK $DET_W $IMG python3 -u gen_items.py || exit 1
+if [ "${SKIP_GEN:-0}" != "1" ]; then
+    echo "=== [1/5] gen_items (slot3-only relabel) ==="
+    $DK $DET_W $IMG python3 -u gen_items.py || exit 1
 
-echo "=== [2/5] gen_drops (room4 fresh drops) ==="
-$DK $DET_W $IMG python3 -u gen_drops.py || exit 1
+    echo "=== [2/5] gen_drops (room4 fresh drops) ==="
+    $DK $DET_W $IMG python3 -u gen_drops.py || exit 1
 
-echo "=== [3/5] gen_paste (room-context augmentation) ==="
-$DK $DET_W $IMG python3 -u gen_paste.py || exit 1
+    echo "=== [3/5] gen_paste (room-context augmentation) ==="
+    $DK $DET_W $IMG python3 -u gen_paste.py || exit 1
+else
+    echo "=== [1-3/5] SKIP_GEN=1: reusing existing data/*.npz ==="
+fi
 
 echo "=== [4/5] train_detector_v5 + bars ==="
 $DK $DET_W $IMG python3 -u train_detector_v5.py | tee /tmp/v5_train.log || exit 1

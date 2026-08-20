@@ -48,6 +48,8 @@ TRAIN_SPEC = [
     ("item_train.npz",  (1, 1, 1), False),
     ("drops_room4.npz", (1, 0, 1), False),
     ("paste_train.npz", (0, 0, 1), False),
+    ("room4_negs.npz",  (0, 0, 1), False),   # v5b: explicit statue negatives, seed-
+                                             # disjoint from the room4.npz FP eval walk
 ]
 ROOM_HELD = ["room2.npz", "room4.npz"]          # link+enemy eval (item labels polluted -> ignored)
 ITEM_HELD = ["item_held.npz"]                    # bank keys (regenerated slot3-only)
@@ -95,7 +97,7 @@ def loc_group(net, files, zero_item=False):
                     ix, iy = decode_peak(pr[j, 2])
                     it += 1
                     i4 += max(abs(ix - its[0][0]), abs(iy - its[0][1])) <= 4
-    f_ = lambda h, n_: round(100.0 * h / n_, 1) if n_ else None
+    f_ = lambda h, n_: float(round(100.0 * h / n_, 1)) if n_ else None  # plain float: np.float64 breaks json.dumps
     return {"link@4": f_(lk4, N), "enemy@4": f_(e4, en), "enemy_n": en,
             "item@4": f_(i4, it), "item_n": it, "frames": N}
 
@@ -109,7 +111,7 @@ def fp_rate(net, f, thr=0.6):
         for k in range(0, len(F), 64):
             pr = net(to_in(F[k:k + 64]).to(DEV)).cpu().numpy()
             hits += int((pr[:, 2].max(axis=(1, 2)) >= thr).sum())
-    return round(100.0 * hits / len(F), 1)
+    return float(round(100.0 * hits / len(F), 1))
 
 
 def main():
@@ -167,16 +169,16 @@ def main():
     v_rooms = res["v5"]["rooms_held"]
     dh = res["v5"]["drops_room2_held"]
     bars = {
-        "drops_room2_held_item@4_ge80": bool(dh and dh["item@4"] is not None and dh["item@4"] >= 80),
-        "fp_room4_le5": res["v5"]["fp"]["room4.npz"] <= 5,
-        "fp_room2_le5": res["v5"]["fp"]["room2.npz"] <= 5,
-        "enemy_noregress": v_rooms["enemy@4"] >= b_rooms["enemy@4"] - 2,
-        "link_noregress": v_rooms["link@4"] >= b_rooms["link@4"] - 2,
-        "bank_item_ge95": res["v5"]["bank_item_held"]["item@4"] is not None
-                          and res["v5"]["bank_item_held"]["item@4"] >= 95,
+        "paste_room2_held_item@4_ge80": bool(dh and dh["item@4"] is not None and dh["item@4"] >= 80),
+        "fp_room4_le5": bool(res["v5"]["fp"]["room4.npz"] <= 5),
+        "fp_room2_le5": bool(res["v5"]["fp"]["room2.npz"] <= 5),
+        "enemy_noregress": bool(v_rooms["enemy@4"] >= b_rooms["enemy@4"] - 2),
+        "link_noregress": bool(v_rooms["link@4"] >= b_rooms["link@4"] - 2),
+        "bank_item_ge95": bool(res["v5"]["bank_item_held"]["item@4"] is not None
+                               and res["v5"]["bank_item_held"]["item@4"] >= 95),
     }
     res["bars"] = bars
-    res["all_pass"] = all(bars.values())
+    res["all_pass"] = bool(all(bars.values()))
     print("RESULT", json.dumps(res), flush=True)
     json.dump(res, open(os.path.join(HERE, "_detector_v5_result.json"), "w"), indent=2)
     print("BARS " + " ".join(f"{k}={'PASS' if v else 'FAIL'}" for k, v in bars.items()), flush=True)
