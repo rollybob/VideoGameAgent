@@ -48,8 +48,11 @@ TRAIN_SPEC = [
     ("item_train.npz",  (1, 1, 1), False),
     ("drops_room4.npz", (1, 0, 1), False),
     ("paste_train.npz", (0, 0, 1), False),
-    ("room4_negs.npz",  (0, 0, 1), False),   # v5b: explicit statue negatives, seed-
-                                             # disjoint from the room4.npz FP eval walk
+    # room4_negs.npz REMOVED (v5b verdict): it bought FP 65.4->53.6 but pushed
+    # enemy@4 94.0 vs baseline 96.1 = past the -2 no-regress bar (interference
+    # through the shared trunk despite channel masking). Detector iteration
+    # STOPPED per pre-commitment; residual statue FP is the ROUTER's job
+    # (give-up/suppress, proven in composer round 2).
 ]
 ROOM_HELD = ["room2.npz", "room4.npz"]          # link+enemy eval (item labels polluted -> ignored)
 ITEM_HELD = ["item_held.npz"]                    # bank keys (regenerated slot3-only)
