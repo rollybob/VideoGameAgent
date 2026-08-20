@@ -16,6 +16,7 @@ to dodge the mgba long-run segfault. Real-time throttle. PIL overlay -> JPEG fra
 (run_drive.sh). Run in thor-rl:cu130 with the VLM up on 127.0.0.1:8077.
 """
 import os, sys, io, re, json, time, base64, threading, subprocess, traceback, warnings, difflib
+from collections import deque
 warnings.filterwarnings("ignore")
 import numpy as np
 ROOT = "/work"
@@ -32,12 +33,18 @@ STUCK_K = int(os.environ.get("STUCK_K", "15"))            # decisions of no worl
 ESC_HOLD = 6                                              # decisions per escape button
 ESC_SWEEP = ["a", "down", "b", "right", "a", "up", "b", "left"]  # anti-freeze rotation: advance dialogs (a) + SLASH obstacles like bushes (b) + try each direction
 MOVE_TH = 4                                                # world-units over ~6 decisions counts as "moving"
+PROGRESS_WIN = 60                                          # decisions of cell history behind the escalation "progressing" signal
+PROGRESS_CELLS = 3                                         # distinct 16-unit cells touched in PROGRESS_WIN counts as real room-level progress (2026-08-19: see below)
+JIG_PERIOD = 24                                            # decisions SWEEP commits to one lateral side before swapping (2026-08-19: see below)
+NAV_MOVE_TH = 3                                            # world-units over ONE decision (FRAME_SKIP frames) = "Link moved" for the navigator's wall-mapping (matches _nav_house_test)
+NAV_DLG_MINLEN = 10                                        # min chars of PIXEL-read text to count as a real message box (filters the reader's short no-box garbage like 'O0oo')
 MENU_HOLD = 6                                              # decisions per button while mashing through menus
 MENU_CYCLE = ["start", "a", "start", "a", "down", "a", "right", "a", "up", "a"]   # advances title/file-select/dialog
 VLM = os.environ.get("VLM", "http://127.0.0.1:8077")
 OUT = os.environ.get("OUT", os.path.join(ROOT, "sessions/agent_run/run.mp4"))
 STATE = os.environ.get("STATE", os.path.join(ROOT, "train/rl/states/alttp_start_normal.state"))
 SKIP_MENU = os.environ.get("SKIP_MENU", "0") == "1"       # start already in gameplay -> skip the title/menu masher
+NO_VLM = os.environ.get("NO_VLM", "0") == "1"             # skip the VLM worker entirely: the navigator drives locomotion unaided (VLM-free verification)
 ROM = os.path.join(ROOT, "Emulator/mGBA/roms/Legend of Zelda, The - A Link To The Past Four Swords (U) [!].gba")
 S1_CKPT = os.environ.get("S1") or os.path.join(ROOT, "train/rl/runs/alttp_s1v2_scratch04/ppo_alttp_600000_steps.zip")   # `or`: empty-string env (wrapper passthrough) falls back too
 DET_PT = os.path.join(DET_DIR, "detector.pt")
@@ -158,6 +165,7 @@ def walker_dir(stack, sx, sy):
 import mgba.core, mgba.image, mgba.gba as gba, mgba.log
 from mgba._pylib import ffi
 from agent_memory import RoomMemory
+from navigator import Navigator                           # classical map+plan+control locomotion (2026-08-18): the nav owns the walk
 from ram_text import extract_text                         # on-screen message text (2026-08-10 comprehension scaffold)
 mgba.log.silence()
 K = gba.GBA
@@ -208,6 +216,18 @@ def health(core):
 def room_cell(core):
     x, y = link_world(core)
     return (x >> 9, y >> 9)
+
+
+def motion_dir(cur, prev, th=2):
+    """Dominant cardinal of the agent's motion prev->cur (world coords, y-DOWN), or None if it barely
+    moved. Used at a room transition to learn which way the agent walked onto the (unobservable) warp
+    tile -- last_btn is unreliable there since the warp fires on POSITION, not the pressed button."""
+    dx, dy = cur[0] - prev[0], cur[1] - prev[1]
+    if abs(dx) < th and abs(dy) < th:
+        return None
+    if abs(dx) >= abs(dy):
+        return "right" if dx > 0 else "left"
+    return "down" if dy > 0 else "up"
 
 
 def s1_action_to_mask(a):
@@ -365,6 +385,7 @@ def write_overlay(frame, link, en, it, drv, info, idx):
             bx(min(max(tx, 4), 236), min(max(ty, 4), 156), (255, 0, 255), 7)
     col = {"S1": (255, 120, 120), "S2nav": (120, 200, 255), "S2": (120, 200, 255), "ESC": (255, 210, 60), "S2wait": (150, 150, 150),
            "SWEEP": (255, 160, 40), "TGTwalk": (255, 0, 255), "TGTa": (255, 90, 255), "WALKit": (90, 255, 190), "WALKnav": (140, 230, 255),
+           "NAV": (60, 220, 120), "NAVwait": (120, 120, 120), "DLG": (255, 230, 90),
            "GAMEOVER": (255, 60, 60)}.get(drv, (200, 200, 200))
     canvas = Image.new("RGB", (240 * Z, 160 * Z + 46), (0, 0, 0)); canvas.paste(im, (0, 0))
     dr2 = ImageDraw.Draw(canvas)
@@ -378,11 +399,16 @@ def main():
     t0 = time.time()
     core, img, w, h = new_core()
     stack = None
-    threading.Thread(target=vlm_worker, daemon=True).start()
+    if not NO_VLM:
+        threading.Thread(target=vlm_worker, daemon=True).start()
+    else:
+        print("VLM worker DISABLED (NO_VLM=1) -- navigator drives locomotion; VLM actions/target-pointing off", flush=True)
     print(f"driving {DECISIONS} decisions (~{MINUTES}min game) -> {OUT}", flush=True)
     nav_dir = 0; stuck_run = 0; last_vlm_n = -1; last_btn = "wait"; moved_since_vlm = False; escaping = False; entered_game = SKIP_MENU; enemy_run = 0
-    wpos = []; nxt = time.time(); drv_counts = {}; item_run = 0
-    mem = RoomMemory(); prev_room = None; sweep_jig = 0     # LOGIC LOOP state
+    wpos = []; wpos_long = deque(maxlen=PROGRESS_WIN); nxt = time.time(); drv_counts = {}; item_run = 0
+    mem = RoomMemory(); prev_room = None                    # LOGIC LOOP state
+    nav = Navigator(); nav_prev_pos = None; nav_drove_last = False   # NAVIGATOR: per-room PERSISTENT occupancy (restored on revisit, fresh on first entry) + GLOBAL door-back warp memory + per-decision moved signal
+    visited_rooms = set()                                           # room-cells entered -> detect RE-ENTRIES (ping-pong) so we can wall off the door back
     tgt = None; tgt_deadline = 0; tgt_apress = 0; tgt_cool = 0; tgt_hist = {}   # LEVEL-3 state
     tgt_asks = {}; tgt_failed = {}                          # per-room ask budget + failed world points (dedup)
     just_gameover = False; alive_run = 0; dead_run = 0      # suppress the bogus transition receipt on respawn
@@ -402,12 +428,28 @@ def main():
         moving = len(wpos) >= 6 and (abs(lw[0] - wpos[-6][0]) + abs(lw[1] - wpos[-6][1])) > MOVE_TH
         if moving:
             moved_since_vlm = True; entered_game = True
+        wpos_long.append((lw[0] // 16, lw[1] // 16))
+        # ROOM-LEVEL PROGRESS signal for escalation ONLY (2026-08-19). `moving` (6-decision lookback)
+        # is right for "did THIS decision have an effect" but wrong for "is the agent actually getting
+        # anywhere" -- an in-place oscillation (nav's own kick, or SWEEP's wall-slip jiggle) satisfies
+        # it every few decisions without any net progress. Confirmed live: RoomMemory.stuck DID climb
+        # (reconstructed from traj.npz: reached 884 consecutive), but every ~1000 decisions, right as
+        # escalation finally reached SWEEP, SWEEP's OWN incidental wobble re-satisfied `moving`, reset
+        # stuck to 0, and dropped esc_lvl back below 2 within 8-40 decisions -- discarding the climb and
+        # restarting it, 3 times over a 5-min run, never giving SWEEP a real chance. A position-delta
+        # signal (even over a long window) still leaked on the kick's peak excursion depending on where
+        # it landed in the window (offline-tested, ~2-5% false positives -- enough to keep starving
+        # STUCK_L2). DISTINCT-CELLS-TOUCHED is robust to that by construction: an oscillation (in-cell,
+        # or bouncing across a nav kick's 1-2 nearby cells) never accumulates PROGRESS_CELLS distinct
+        # cells, while real movement (even slow, 1 world-unit/decision, offline-tested) does.
+        progressing = len(set(wpos_long)) >= PROGRESS_CELLS
         with lock:
             cur_n = directive["n"]; vbtn = directive["button"]; vsub = directive["subgoal"]
 
         room = room_cell(core) if entered_game else None     # movement-oracle room id (control, not perception)
         if entered_game and prev_room is None:
-            mem.enter(room, step); prev_room = room
+            mem.enter(room, step); prev_room = room; visited_rooms.add(room)
+            nav.notify_room_change(room)                      # register the start room too, or a later revisit would look unexplored
         if entered_game and room != prev_room:               # TRANSITION receipt: what we were doing WORKED
             if just_gameover:                                # respawn jump, not an earned exit -- no receipt
                 mem.enter(room, step)
@@ -418,6 +460,16 @@ def main():
                       f"(rooms={mem.stats()['rooms_visited']})", flush=True)
             prev_room = room
             tgt = None; tgt_apress = 0; tgt_cool = 0         # targets are room-local
+            was_seen = room in nav.room_maps                # before the switch: do we already have a persisted map for this room?
+            nav.notify_room_change(room)                     # switch to room's PERSISTENT map (restored if seen before, fresh if not) + replan; global warp-backs persist
+            md = motion_dir(wpos[-2], wpos[-3]) if len(wpos) >= 3 else None   # ACTUAL motion onto the (unobservable) warp tile (last_btn is unreliable there)
+            if room in visited_rooms and md is not None:     # RE-ENTRY (ping-pong): wall off the door back into the room we just left
+                nav.block_warp_exit(wpos[-2], md)            # wpos[-2] = the agent's last pos in that room = the warp tile
+            print(f"[nav] -> {room} reentry={room in visited_rooms} restored={was_seen}({len(nav.grid.g)}c) "
+                  f"warp_from={nav.grid.cell_of(wpos[-2]) if len(wpos) >= 2 else None} md={md} nwarps={len(nav.grid.warps)}", flush=True)
+            visited_rooms.add(room)
+            wpos_long.clear()                                # progress window is room-local -- a warp jump is not "no progress"
+            nav_prev_pos = None
             with lock:                                       # drop stale point asks/answers from the old room
                 shared.pop("tgt_req", None); shared.pop("tgt_resp", None)
         esc_lvl = mem.escalation(room) if entered_game else 0
@@ -426,6 +478,9 @@ def main():
         enemy_run = enemy_run + 1 if len(en) >= 2 else 0     # hysteresis + >=2 -> filter OOD false-positive enemies
         item_run = item_run + 1 if len(it) >= 1 else 0       # sustained detected item -> walk-to-collect candidate
         hp = health(core) if entered_game else 1
+        ram_msg = extract_text(core) if entered_game else ""   # RAM message text -> the pixel-vs-RAM scoring sidecar ONLY. It is STALE (the dialogue buffer holds the LAST message even with NO box on screen: 1791/1800 non-empty in the VLM-free run) so it is NOT a box-present signal.
+        pix = pixreader.read_message(frame)                    # PIXELS -> the agent's on-screen text (north-star) AND the reliable box signal (empty when no box is shown)
+        pix_box = entered_game and len(pix.strip()) >= NAV_DLG_MINLEN   # a real message box: long PIXEL-read line, filtering the reader's short no-box garbage
         dead_run = dead_run + 1 if (entered_game and hp <= 0) else 0   # hysteresis: savestate BOOT reads hp=0
         if hp > 0 and just_gameover:                         # for a few decisions (brainlegs2 logged phantom
             alive_run += 1                                   # RESPAWNs at t=0); a real game-over holds for 100s
@@ -516,45 +571,55 @@ def main():
                     note_btn = "b"
                 else:
                     if ph in (2, 4):
-                        sweep_jig ^= 1
+                        # COMMIT to one lateral side for a full sub-period instead of flipping every
+                        # trigger (2026-08-19): the old `sweep_jig ^= 1` alternated left/right twice per
+                        # 6-decision cycle, so any lateral drift cancelled out before crossing even one
+                        # cell -- fine for a symmetric wall-slip off a corner, useless for aligning with
+                        # a door gap offset by 1-2 cells (confirmed live + visually: Link stuck standing
+                        # on the solid step beside the actual gap, oscillating in place). JIG_PERIOD sets
+                        # how many decisions each side gets before swapping -- long enough for the ph in
+                        # (2,4) gating (1-in-3 decisions) to accumulate several cells of real drift.
+                        sweep_jig = (step // JIG_PERIOD) % 2
                         mask = DIR_MASK[BTN_TO_DIR[sd]] | DIR_MASK[BTN_TO_DIR[PERP[sd][sweep_jig]]]
                     else:
                         mask = DIR_MASK[BTN_TO_DIR[sd]]
                     note_btn = sd
                 drv = "SWEEP"; last_btn = f"sweep:{sweep_edge}"; nav_dir = BTN_TO_DIR[sd]; escaping = False; stuck_run = 0
-        else:                                                # gameplay: VLM navigates; MASTER anti-freeze if Link is stuck
+        else:                                                # gameplay: the NAVIGATOR owns locomotion; the VLM owns ACTIONS
             if cur_n != last_vlm_n:
                 last_vlm_n = cur_n; last_btn = vbtn; moved_since_vlm = False
             if moving:                                       # progress = Link's WORLD position changed
-                stuck_run = 0; escaping = False
+                stuck_run = 0
             else:
-                stuck_run += 1
-                if stuck_run >= STUCK_K:
-                    escaping = True                          # stuck too long (wall / wait / dialogue) -> force action
-            if escaping:                                     # ANTI-FREEZE: sweep A + directions until Link moves again
-                esc = ESC_SWEEP[(step // ESC_HOLD) % len(ESC_SWEEP)]
-                mask = (BTN[esc] if step % 2 == 0 else 0) if esc in ("a", "b", "start") else DIR_MASK[BTN_TO_DIR[esc]]
-                drv = "ESC"; last_btn = esc; nav_dir = 0
-            elif vbtn in BTN_TO_DIR:                          # VLM direction -> walk
-                nav_dir = BTN_TO_DIR[vbtn]
-                if walker is not None:                        # intent EXECUTED: walker to a screen-edge target
-                    lsx, lsy = (link[0], link[1]) if link[0] >= 0 else (120, 80)
-                    mask = walker_dir(stack, *WALK_EDGE_PT[nav_dir](lsx, lsy))
-                    drv = "WALKnav"
-                else:
-                    mask = DIR_MASK[nav_dir]; drv = "S2nav"
-            elif vbtn in ("a", "b", "start", "select"):      # VLM action -> tap
+                stuck_run += 1                               # feeds the VLM `looping` signal (esc_lvl also does)
+            # The old per-decision ESC_SWEEP anti-freeze is retired here: the navigator MAPS the wall it
+            # bumps and replans around it, and the room-level esc_lvl>=2 SWEEP above stays the higher
+            # fallback if the nav truly wedges. (`escaping` is now vestigial -- never set True.)
+            if pix_box and not moving:                       # DIALOGUE safety net: a real on-screen text box freezes Link
+                # and the navigator cannot advance text (it would map the box as walls and wedge). Tap A to
+                # advance/close it -- gated on the PIXEL reader (empty when no box is shown, so no false A-taps)
+                # + not-moving, so A never fires while walking (A while free = the ITEM button = magic drain).
+                # (First cut gated on the RAM extract_text oracle: WRONG -- stale buffer text, non-empty 1791/1800.)
+                mask = BTN["a"] if step % 2 == 0 else 0
+                drv = "DLG"; last_btn = "a"; nav_dir = 0
+            elif vbtn in ("a", "b", "start", "select"):      # VLM ACTION (interact / read / advance) -> tap (unchanged)
                 mask = BTN[vbtn] if step % 2 == 0 else 0; drv = "S2"; nav_dir = 0
-            else:                                            # VLM wait (brief -- stuck_run climbs, escape takes over)
-                mask = 0; drv = "S2wait"; nav_dir = 0
+            else:                                            # NAVIGATOR: frontier-explore this room, raw cardinal steering
+                nav_moved = (abs(lw[0] - nav_prev_pos[0]) + abs(lw[1] - nav_prev_pos[1]) >= NAV_MOVE_TH) \
+                    if (nav_drove_last and nav_prev_pos is not None) else True   # per-decision moved: only valid across consecutive nav steps
+                d = nav.step(lw, nav_moved); nav_prev_pos = lw
+                if d is None:                                # boxed in (defensive; nav currently always returns a dir) -> idle; stuck streak -> esc_lvl SWEEP
+                    mask = 0; drv = "NAVwait"; nav_dir = 0
+                else:
+                    nav_dir = BTN_TO_DIR[d]; mask = DIR_MASK[nav_dir]; drv = "NAV"; last_btn = d
 
+        nav_drove_last = (drv == "NAV")                       # the per-decision moved signal is valid only across consecutive nav steps
         if entered_game and drv not in ("MENU", "GAMEOVER"):  # record the decision's outcome in the room log
-            mem.note(room, note_btn if note_btn is not None else last_btn, moving, step,
+            mem.note(room, note_btn if note_btn is not None else last_btn, progressing, step,
                      edge=sweep_edge)
-        pix = pixreader.read_message(frame)                  # PIXELS -> the agent (north-star: read the screen)
-        hintmem.observe(pix, step)                            # assemble + retain messages past box-close
+        hintmem.observe(pix, step)                            # assemble + retain messages past box-close (pix computed early, above)
         recent = hintmem.active(step)                         # hints to surface this decision ([] if HINT_PERSIST=0)
-        _log_pix_ram(step, pix, extract_text(core), recent)  # RAM extract_text = scoring ORACLE; recent = retention timeline
+        _log_pix_ram(step, pix, ram_msg, recent)             # RAM extract_text (computed early as ram_msg) = scoring ORACLE; recent = retention timeline
         with lock:
             shared.update(frame=frame, det=(link, en, it), step=step,
                           last_btn=last_btn, last_changed=moved_since_vlm,
