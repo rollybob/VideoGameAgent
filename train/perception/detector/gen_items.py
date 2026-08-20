@@ -15,13 +15,18 @@ CAM_X,CAM_Y=0x02B82,0x02B86
 DIRS=[1,2,3,4,5,6,7,8]
 
 def onscreen(iw,cx,cy):
+    # ITEM = SLOT 3 ONLY (v5 relabel, 2026-08-20): the keydrop banks' key lives in
+    # slot 3 (harvest convention). The old any-hp==0-slot rule labeled room4's
+    # STATUES as items -> the net fired on them at key-level conf (composer round-1
+    # router theft). Statues/junk slots now stay unlabeled = background negatives.
     en=[]; it=[]
     for i in range(16):
         ex,ey=u16(iw,0x03846+4*i),u16(iw,0x03848+4*i)
         if (ex,ey)==(0,0): continue
         sx,sy=ex-cx,ey-cy
         if 0<=sx<240 and 0<=sy<160:
-            (en if int(iw[0x03250+i])>0 else it).append((sx,sy))
+            if int(iw[0x03250+i])>0: en.append((sx,sy))
+            elif i==3: it.append((sx,sy))
     return en,it
 
 def pad(lst):

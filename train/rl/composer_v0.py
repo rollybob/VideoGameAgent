@@ -52,7 +52,8 @@ from eval_detector import peak_single, peaks_multi     # noqa: E402
 
 DEV = "cuda"
 S1_CKPT = os.path.join(HERE, "runs", "distill_r2", "s1_joint_r2c.zip")
-DET_PT = os.path.join(VGA, "train", "perception", "detector", "detector.pt")
+# DET override (v5 arc): point at an alternate detector checkpoint without code edits.
+DET_PT = os.environ.get("DET") or os.path.join(VGA, "train", "perception", "detector", "detector.pt")
 
 WINDOW = 250
 N_EPS = int(os.environ.get("N_EPS", "16"))
