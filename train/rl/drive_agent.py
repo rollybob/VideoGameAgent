@@ -45,6 +45,10 @@ OUT = os.environ.get("OUT", os.path.join(ROOT, "sessions/agent_run/run.mp4"))
 STATE = os.environ.get("STATE", os.path.join(ROOT, "train/rl/states/alttp_start_normal.state"))
 SKIP_MENU = os.environ.get("SKIP_MENU", "0") == "1"       # start already in gameplay -> skip the title/menu masher
 NO_VLM = os.environ.get("NO_VLM", "0") == "1"             # skip the VLM worker entirely: the navigator drives locomotion unaided (VLM-free verification)
+RANDOM_NAV = os.environ.get("RANDOM_NAV", "0") == "1"     # BASELINE (2026-08-20): random-walk locomotion instead of the classical navigator
+RAND_SEED = int(os.environ.get("RAND_SEED", "0"))         # (same harness) -- tests planner-fixation (random routes around the bush block) vs a capability gap
+RAND_HOLD = int(os.environ.get("RAND_HOLD", "1"))         # decisions to hold one random direction before re-rolling (action persistence)
+_RRNG = np.random.RandomState(RAND_SEED)                  # isolated, seeded RNG; unused unless RANDOM_NAV=1
 ROM = os.path.join(ROOT, "Emulator/mGBA/roms/Legend of Zelda, The - A Link To The Past Four Swords (U) [!].gba")
 S1_CKPT = os.environ.get("S1") or os.path.join(ROOT, "train/rl/runs/alttp_s1v2_scratch04/ppo_alttp_600000_steps.zip")   # `or`: empty-string env (wrapper passthrough) falls back too
 DET_PT = os.path.join(DET_DIR, "detector.pt")
@@ -408,6 +412,7 @@ def main():
     wpos = []; wpos_long = deque(maxlen=PROGRESS_WIN); nxt = time.time(); drv_counts = {}; item_run = 0
     mem = RoomMemory(); prev_room = None                    # LOGIC LOOP state
     nav = Navigator(); nav_prev_pos = None; nav_drove_last = False   # NAVIGATOR: per-room PERSISTENT occupancy (restored on revisit, fresh on first entry) + GLOBAL door-back warp memory + per-decision moved signal
+    rand_dir = "up"; rand_left = 0                                   # RANDOM_NAV baseline walk state (unused unless RANDOM_NAV=1)
     visited_rooms = set()                                           # room-cells entered -> detect RE-ENTRIES (ping-pong) so we can wall off the door back
     tgt = None; tgt_deadline = 0; tgt_apress = 0; tgt_cool = 0; tgt_hist = {}   # LEVEL-3 state
     tgt_asks = {}; tgt_failed = {}                          # per-room ask budget + failed world points (dedup)
@@ -604,6 +609,13 @@ def main():
                 drv = "DLG"; last_btn = "a"; nav_dir = 0
             elif vbtn in ("a", "b", "start", "select"):      # VLM ACTION (interact / read / advance) -> tap (unchanged)
                 mask = BTN[vbtn] if step % 2 == 0 else 0; drv = "S2"; nav_dir = 0
+            elif RANDOM_NAV:                                 # RANDOM-locomotion baseline (2026-08-20): seeded random walk in the SAME
+                # harness, replacing the classical navigator, to distinguish planner fixation from a real capability gap.
+                # Holds a direction for RAND_HOLD decisions (action persistence) so it drifts instead of jittering in place.
+                if rand_left <= 0:
+                    rand_dir = ("up", "down", "left", "right")[_RRNG.randint(0, 4)]; rand_left = RAND_HOLD
+                rand_left -= 1
+                nav_dir = BTN_TO_DIR[rand_dir]; mask = DIR_MASK[nav_dir]; drv = "RAND"; last_btn = rand_dir
             else:                                            # NAVIGATOR: frontier-explore this room, raw cardinal steering
                 nav_moved = (abs(lw[0] - nav_prev_pos[0]) + abs(lw[1] - nav_prev_pos[1]) >= NAV_MOVE_TH) \
                     if (nav_drove_last and nav_prev_pos is not None) else True   # per-decision moved: only valid across consecutive nav steps
