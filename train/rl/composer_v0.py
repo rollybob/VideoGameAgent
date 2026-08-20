@@ -68,6 +68,9 @@ ROOM_IDS = [int(r) for r in os.environ.get("ROOMS", "4,2,0").split(",")]
 # (slot3 alive or empty post-kill), so chain numbers mix target-selection with
 # collection; the bank removes the confound.
 MODE = os.environ.get("MODE", "chain")   # chain | bank
+TRACE0 = os.environ.get("TRACE0", "0") == "1"   # chain-mode debug: track items from
+# step 0 (not just post-kill) and dump a marked PNG at the FIRST COLLECT lock --
+# added to get eyes on WHAT the item channel fires at in room4 (router theft).
 BANK_DIR = os.path.join(VGA, "train", "perception", "keyprobe_v2", "states")
 # fair-8 = the 12-state bank minus the 4 perception-dead states (00/07/08/09:
 # key at/past the vertical camera edge -- a null there is CORRECT, arbiter v1).
@@ -82,6 +85,17 @@ BANK_SEEDS = [7000, 7100, 7200]
 # ~4 decisions after pickup makes the item vanish for real).
 ITEM_GATE = 3
 ITEM_HOLD = 4
+# Give-up/suppress (the ONE mechanism added by the room4 debug, 2026-08-20): the
+# detector's item head fires on room4's STATUES at conf up to 1.05 (= real-key
+# level, so thresholds cannot discriminate). Pickup SEMANTICS can: a real key
+# VANISHES when Link steps on it; a statue is solid and just gets ground against.
+# If Link has been adjacent to a still-detected target for NEAR_M decisions, or
+# COLLECT has chased one target for GIVEUP decisions, it is not a collectible ->
+# suppress that screen position for the episode and hand control back to S1.
+NEAR_PX = 12
+NEAR_M = 4
+GIVEUP = 40
+SUPPRESS_R = 14
 LINK_THR = 0.5     # drive_agent's gate: below it the argmax "peak" is noise
 STUCK_N = 6        # link-position window (decisions) for the collect unstick
 STUCK_PX = 3       # span below this over STUCK_N sightings = stuck
@@ -113,6 +127,9 @@ class Composer:
         self.link_hist = []
         self.jitter = 0
         self.mode = "EXPLORE"
+        self.suppressed = []     # screen positions proven non-collectible this episode
+        self.near_run = 0        # consecutive decisions adjacent to a live target
+        self.chase = 0           # decisions spent on the current engagement
 
     def detect(self, frame):
         with torch.no_grad():
@@ -129,6 +146,8 @@ class Composer:
             self.last_link = (float(link[0]), float(link[1]))
             self.link_hist.append(self.last_link)
             self.link_hist = self.link_hist[-STUCK_N:]
+        items = [p for p in items if all((p[0] - sx) ** 2 + (p[1] - sy) ** 2 > SUPPRESS_R ** 2
+                                         for sx, sy in self.suppressed)]
 
         if items:
             self.item_run += 1
@@ -146,6 +165,21 @@ class Composer:
 
         if self.item_lock and self.last_item is not None:
             self.mode = "COLLECT"
+            self.chase += 1
+            dx = self.last_item[0] - self.last_link[0]
+            dy = self.last_item[1] - self.last_link[1]
+            self.near_run = self.near_run + 1 if (dx * dx + dy * dy) <= NEAR_PX ** 2 else 0
+            if (self.near_run >= NEAR_M and self.item_run > 0) or self.chase >= GIVEUP:
+                # Adjacent-and-still-there, or chased too long: not a collectible.
+                self.suppressed.append((self.last_item[0], self.last_item[1]))
+                self.item_lock = False
+                self.item_run = 0
+                self.chase = 0
+                self.near_run = 0
+                self.link_hist = []
+                self.mode = "COMBAT"
+                act, _ = self.s1.predict(obs, deterministic=False)
+                return act, self.mode
             if self.jitter > 0:
                 self.jitter -= 1
                 return self._random_action(), self.mode
@@ -159,10 +193,10 @@ class Composer:
                     self.jitter = JITTER_N
                     self.link_hist = []
                     return self._random_action(), self.mode
-            dx = self.last_item[0] - self.last_link[0]
-            dy = self.last_item[1] - self.last_link[1]
             return np.array([_greedy_dir(dx, dy), 0, 0, 0, 0]), self.mode
 
+        self.chase = 0
+        self.near_run = 0
         self.mode = "COMBAT"
         act, _ = self.s1.predict(obs, deterministic=False)
         return act, self.mode
@@ -191,6 +225,7 @@ def eval_room(arm, model, net, state, ffi, seeds, horizon=1500, chain=True):
         modes = {"COMBAT": 0, "COLLECT": 0, "EXPLORE": 0}
         pk_dec = pk_item_dec = 0          # post-kill decisions / with item seen
         pk_conf = 0.0                     # max item-channel confidence post-kill
+        dumped = False
         step, done = 0, False
         while not done:
             if comp is not None:
@@ -212,7 +247,21 @@ def eval_room(arm, model, net, state, ffi, seeds, horizon=1500, chain=True):
                     if not chain or (first_kill is not None and step - first_kill <= WINDOW):
                         got_key_after = True
                         key_mode = mode
-            if comp is not None and (not chain or first_kill is not None):
+            if comp is not None and TRACE0 and comp.item_lock and not dumped:
+                from PIL import Image, ImageDraw
+                img = Image.fromarray(env._frames[-1])
+                dr = ImageDraw.Draw(img)
+                ix, iy = comp.last_item[0], comp.last_item[1]
+                lx, ly = comp.last_link
+                dr.ellipse([ix - 5, iy - 5, ix + 5, iy + 5], outline=(0, 128, 255), width=2)
+                dr.ellipse([lx - 5, ly - 5, lx + 5, ly + 5], outline=(0, 255, 0), width=2)
+                os.makedirs(os.path.join(HERE, "_composer_dbg"), exist_ok=True)
+                p = os.path.join(HERE, "_composer_dbg", f"lock_ep{ep}_step{step}.png")
+                img.save(p)
+                print(f"    [lock] ep{ep} step{step} item=({ix:.0f},{iy:.0f}) "
+                      f"conf={comp.dbg_item_conf:.2f} link=({lx:.0f},{ly:.0f}) -> {p}", flush=True)
+                dumped = True
+            if comp is not None and (not chain or first_kill is not None or TRACE0):
                 pk_dec += 1
                 if comp.dbg_items_n > 0:
                     pk_item_dec += 1
@@ -276,7 +325,7 @@ def main():
             print(f"{arm:9} BANK TOTAL: {coll}/{tot} ({100.0 * coll / max(1, tot):.0f}%)  "
                   f"[refs: arbiter 79 / s1 58 / random 42]", flush=True)
     else:
-        rooms = [2] if SMOKE else ROOM_IDS
+        rooms = ROOM_IDS if "ROOMS" in os.environ else ([2] if SMOKE else ROOM_IDS)
         n = 2 if SMOKE else N_EPS
         for arm in ARMS:
             out[arm] = {}
