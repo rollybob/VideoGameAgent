@@ -50,3 +50,53 @@ class StreakConfirmer:
     def reset(self) -> None:
         self._last = None
         self._streak = 0
+
+
+class HysteresisLatch:
+    """A binary latch with asymmetric confirmation (hysteresis).
+
+    Where StreakConfirmer reports the current run length and leaves the
+    thresholding to the caller, this wraps the common enter/leave pattern into a
+    single boolean state: require `enter` consecutive truthy observations to flip
+    OFF -> ON, and `leave` consecutive falsy observations to flip ON -> OFF. The
+    asymmetry is the hysteresis -- a stray frame will not flap the state. Any
+    interrupting observation resets the in-progress run.
+
+    `enter` and `leave` are >= 1; a value of 1 flips on the first matching signal.
+    """
+
+    def __init__(self, enter: int, leave: int, start_on: bool = False) -> None:
+        if enter < 1 or leave < 1:
+            raise ValueError("enter and leave must be >= 1")
+        self._enter = enter
+        self._leave = leave
+        self._on = start_on
+        self._truthy_count = 0
+        self._falsy_count = 0
+
+    def update(self, signal) -> bool:
+        """Record one observation; return the latch state (True=ON) afterward.
+
+        `signal` is judged by normal Python truthiness.
+        """
+        if self._on:
+            if not signal:
+                self._falsy_count += 1
+                if self._falsy_count >= self._leave:
+                    self._on = False
+                    self._falsy_count = 0
+            else:
+                self._falsy_count = 0
+        else:
+            if signal:
+                self._truthy_count += 1
+                if self._truthy_count >= self._enter:
+                    self._on = True
+                    self._truthy_count = 0
+            else:
+                self._truthy_count = 0
+        return self._on
+
+    @property
+    def on(self) -> bool:
+        return self._on
