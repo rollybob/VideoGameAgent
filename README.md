@@ -1,71 +1,84 @@
 # VGA - Vision-Based Game Agent
 
-A game-playing agent that sees the screen and presses buttons - no emulator
-memory hooks, no save-state inspection. It captures the emulator window, decides
-on an input from pixels alone, and sends a keystroke. The architecture is
-deliberately game-agnostic: a tiny core moves frames and buttons, and all
-game-specific knowledge lives in a plugin.
+A research agent that plays Game Boy Advance games from screen pixels. It captures
+the emulator frame, perceives the scene with small learned models, decides on an
+input, and presses a button - with no access to game memory at runtime.
+
+Games used so far: *The Legend of Zelda: A Link to the Past* (GBA), including
+4-player *Four Swords* link-cable sessions; *Final Fantasy Tactics Advance*;
+*Pokemon* (the original plugin); and *Fire Emblem* (text-reading benchmarks).
+
+## Core idea: memory teaches, pixels act
+
+Emulator RAM is used only **offline**, as an automatic labeler and as a ground-truth
+scorer for evaluations. Every model the agent runs is trained on pixels and sees
+only pixels at inference time. That keeps the agent game-agnostic in principle while
+giving it free, perfect training labels wherever the game's memory layout is known.
+
+## Architecture - three tiers on three clocks
 
 ```
-capture (frame) -> perceive (GameState) -> decide (Action) -> act (button)
+frame --> fast perception (CNN detector, CRNN text reader)   every frame
+            |
+            v
+          reflex policy (PPO)                                every step
+            ^
+            |  goals / interjections, low frequency
+          reasoner (vision-language model, Qwen3-VL-8B)      every few seconds
 ```
 
-## Design
+- **Perception** (`train/perception/`, `train/ocr/`): a 0.11M-parameter
+  CenterNet-style heatmap detector for entities, trained on RAM-labeled frames,
+  and CRNN readers for on-screen text (trained on synthetic plus real crops; the
+  Zelda reader's real labels come from the RAM text buffer).
+- **Reflex policy** (`train/rl/`): PPO policies in Gymnasium environments wrapping
+  the emulator (`alttp_ppo_env.py`, `fs_ppo_env.py`).
+- **Reasoner** (`serve/`, `vga/reason/`): a locally served vision-language model
+  consulted at low frequency to set goals or break the policy out of stuck states.
+  It is too slow (~13 s per call) to steer frame by frame, so it decides *what to
+  want*, and the fast tiers decide *how to move*.
 
-The core knows nothing about any specific game. It defines a hard contract
-(`vga/core/contract.py`) and runs the loop (`vga/core/loop.py`); a plugin
-supplies perception and control behind one interface (`vga/core/plugin.py`).
+## Results
 
-- **`GameState`** - everything control may see about a frame: detected objects,
-  validated OCR text, named region aggregates, and the raw frame (read-only).
-  It carries **no** game-semantic label like "battle" or "overworld" - that
-  interpretation is the plugin's job.
-- **`Action`** - the only thing control may emit: a button press (optionally a
-  short mash) or a wait. Console-level, not game-level.
+Measured on an NVIDIA Jetson AGX Thor. Success is always scored from game memory,
+never from the agent's own perception.
 
-A new game is a new plugin registered in `run_vga.py`; the core stays untouched.
+| Component | Result |
+|---|---|
+| Entity detector | 2,830 FPS at batch size 1; locates 89.6% of enemies within 4 px in rooms held out from training |
+| Text reader, RAM-taught (Zelda) | Character error rate cut from 43.7% to 5.3% on a small held-out set (21 real text lines), across all dialogue-box styles |
+| Text reader, multi-game CRNN | Lower character error rate than Tesseract on real text from all three games tested: Pokemon 10.6% vs 21.2%, Fire Emblem 14.7% vs 17.1%, FFTA 18.0% vs 26.4% |
+| Reasoner over reflex policy | Key collection 69%, vs. 50% for the PPO policy alone and 28% for random play (3 seeds x 12 start states, paired p ~ 0.04; `train/rl/arbiter_v1.py`) |
+| Evaluation harness | Found that menus ignore input while animating in; fixing the press timing took a menu task from 0/8 to 8/8 |
 
 ## Layout
 
 ```
 vga/
-  core/
-    contract.py        GameState / Action / Button - the perception<->control seam
-    loop.py            capture -> perceive -> decide -> act
-    plugin.py          Plugin interface + registry / selection
-    emulator.py        mGBA window capture + focused keystroke output
-    stability.py       multi-frame confirmation / hysteresis helpers
-    state_discovery.py  unsupervised state clustering (perception support)
-    embedding.py       lightweight frame embeddings
-  plugins/
-    pokemon/           first plugin: perception, strategy, optional OCR
-run_vga.py             entry point: pick a plugin for the on-screen game, run loop
-docs/DIAGNOSIS.md      architecture/diagnosis write-up (Phase 0)
+  core/        contract (GameState / Action), capture->perceive->decide->act loop,
+               emulator I/O (Linux: mss + xdotool; Windows: pyautogui)
+  plugins/     per-game plugins (pokemon)
+  reason/      reasoner plugin, staged goals, retrieval, knowledge store
+train/
+  perception/  RAM-labeled detector data generation + training
+  ocr/         CRNN text reader: data generation, training, evaluation, ONNX export
+  rl/          PPO environments, policies, arbiter experiments
+  ram/         RAM address maps, oracles, and task "ladder" benchmarks
+serve/         vision-language model server (vLLM / transformers) + benchmarks
+link/          headless 4-player link-cable sessions (Four Swords)
+tests/         unit tests
+docs/          DIAGNOSIS.md (original architecture analysis), ROADMAP.md
 ```
 
-## Requirements
+Design notes and experiment logs referenced in some code comments are kept private;
+the code, results, and the two documents above are what this repository contains.
 
-Lightweight by design (no torch / ultralytics / LLM / RL stack):
+## Running
 
-```
-pip install -r requirements.txt
-```
-
-`numpy`, `opencv-python`, `pillow`, `pyautogui`, `pygetwindow`. OCR
-(`pytesseract`) is **optional** - it additionally needs the Tesseract-OCR binary
-on PATH; if absent, OCR self-disables and the loop still runs.
-
-## Run
-
-1. Start mGBA with a ROM loaded (window title contains "mGBA").
-2. Run the agent:
-
-   ```
-   python run_vga.py                  # run until Ctrl+C
-   python run_vga.py --max-frames 50  # bounded run, useful for a smoke test
-   ```
-
-The agent probes one frame, selects a matching plugin, and drives the loop.
+The core loop needs only `pip install -r requirements.txt` and a running mGBA
+window (`python run_vga.py`). On a headless Linux box, run mGBA inside Xvfb with a
+window manager. Training and the model server need PyTorch with CUDA; they were
+developed in Docker containers on the Jetson Thor (`serve/Dockerfile.vlm`).
 
 ## ROM disclaimer
 
@@ -75,6 +88,10 @@ emulator binaries, and model weights are excluded via `.gitignore`.
 
 ## Status
 
-Active rebuild. The `vga/` package is the current architecture; an earlier
-single-file prototype and its experiments live on the archived `VideoGameAgent`
-branch. See `docs/DIAGNOSIS.md` for the analysis behind this design.
+Paused (September 2026). Perception and short-horizon tasks work; the open problem
+is reliable long-horizon navigation across rooms and screens.
+
+## Acknowledgments
+
+Developed with Claude Code (Anthropic) as an AI pair-programmer and experiment
+runner.
